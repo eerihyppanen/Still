@@ -1,0 +1,5 @@
+
+      TOUCH:
+>       10-28 12:41:32.542 |   effect |             finished | duration:   257ms | start: 12:41:32.580 | end: 12:41:32.799 | scale:     NONE (adaptive=1.00) | flags:    0 | usage: TOUCH | com.still.habits (uid=10219, deviceId=0) | reason: performHapticFeedback(constant=4): ViewRootImpl#performHapticFeedback | played: Prebaked=TEXTURE_TICK(MEDIUM, with fallback) | original: null
+
+      IME:

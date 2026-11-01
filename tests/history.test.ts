@@ -1,0 +1,52 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { dailyProgress, todayHabits } from "../src/domain/history";
+import { summarize } from "../src/domain/habits";
+import type { Habit, Completion } from "../src/domain/models";
+const h: Habit = {
+  id: "h",
+  name: "Water",
+  emoji: "💧",
+  color: "#367C74",
+  description: "",
+  createdDate: "2026-10-26",
+  archived: false,
+  schedules: [{ effectiveDate: "2026-10-26", weekdays: [1, 2, 3, 4, 5] }],
+  periods: [{ startDate: "2026-10-26", endDate: null }],
+  reminderTime: null,
+};
+const records: Completion[] = [{ habitId: "h", date: "2026-10-26" }];
+test("daily progress uses actual check-ins and marks future dates as having no results", () => {
+  assert.deepEqual(
+    dailyProgress(
+      [h],
+      records,
+      ["2026-10-26", "2026-10-27", "2026-10-28"],
+      "2026-10-27",
+    ),
+    [
+      { date: "2026-10-26", completed: 1, scheduled: 1, rate: 100 },
+      { date: "2026-10-27", completed: 0, scheduled: 1, rate: 0 },
+      { date: "2026-10-28", completed: 0, scheduled: 0, rate: 0 },
+    ],
+  );
+});
+test("aggregate rates use scheduled check-ins as denominator rather than averaging percentages", () => {
+  const other: Habit = {
+    ...h,
+    id: "b",
+    schedules: [{ effectiveDate: "2026-10-26", weekdays: [1] }],
+  };
+  assert.deepEqual(
+    summarize([h, other], records, ["2026-10-26", "2026-10-27"], "2026-10-27"),
+    { completed: 1, scheduled: 3, rate: 33 },
+  );
+});
+test("archived habits never contribute to Today even if they have a check-in today", () => {
+  assert.equal(
+    todayHabits([{ ...h, archived: true }], records, "2026-10-26").length,
+    0,
+  );
+  assert.equal(todayHabits([h], records, "2026-10-26").length, 1);
+  assert.equal(todayHabits([h], records, "2026-10-25").length, 0);
+});

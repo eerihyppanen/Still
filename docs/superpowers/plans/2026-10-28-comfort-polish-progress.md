@@ -1,0 +1,13 @@
+# SDD ledger — plan: docs/superpowers/plans/2026-10-28-comfort-polish.md
+
+Pre-flight: Task 1 supplies validation/dirty helpers to the form. Task 2 extends settings consumed by Task 3's existing global reminder consent; the test-specific ID remains outside the repeating reminder namespace. No interface conflict.
+
+Ruling: Execute inline in the explicitly supplied Desktop folder without Git metadata. Preserve originals for review; no worktree or commits are available here.
+
+Task 1: complete. Draft/error tests observed failing before implementation; browser invalid-name focus and Keep editing/Discard verified. Browser September-to-today return restores month/selection. Native pristine Cancel, Android Back/Keep editing/Discard, both successful save destinations, name error focus, and weekday error scrolling pass.
+
+Task 2: complete. Time/settings/check-in tests observed failing before implementation; 52-test suite passes. Review identified an Android 14-only haptic effect; corrected to Clock_Tick, available across supported Android versions. Clock preferences reread on foreground as well as native configuration events. Same mounted draft survives OS 24/12-hour changes and both actual native pickers reflect them. Android records the successful completion's TOUCH effect; unchecking adds none. Settings persist after cold launch. Physical feel and iOS remain unverified.
+
+Task 3: complete. Test-driver failures were reproduced before implementation. Native tests verify disabled-without-consent controls, foreground/background silent delivery, presented-notification clearing, pending cancellation preserving the daily habit alarm, and global-off cancelling pending test/daily alarms.
+
+Task 4: complete. SDK patch alignment completed; dependency validation and Doctor 20/20 pass. Final strict TypeScript/lint/52 tests and four time-zone runs pass. Final all-platform exports pass after review corrections. Independent review approves final source. Release APK built and installed in place with matching signing identity; source-map checks confirm the review corrections are bundled. Saved .expo/phone-apk/Still-1.0.0-comfort.apk, preserving earlier builds. Both display-recreation navigation cycles pass after correcting the script to scroll to the empty-state action at large text; that script change was independently reviewed. QA habit removed, preferences/display/time restored, no pending Still alarm or current-process crash entry. Browser tab recovered without clearing storage and is open on Today; both manifest project roots are Desktop. README/DEVELOPMENT/VERIFICATION updated with actual evidence and remaining physical-phone/iOS limitations. No backup/restore or public tunnel added.

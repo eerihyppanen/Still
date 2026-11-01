@@ -1,0 +1,11 @@
+# Offline phone additions
+
+Implement the user's approved additions and deliver an update APK. Keep all data and reminders local, with no accounts, backend, analytics, or app-managed backups.
+
+- Privacy: disable Android cloud backup and exclude app data from device-transfer rules via a config plugin. Remove network access from standalone release manifests while preserving development-server access in debug builds. Keep the existing package/signing identity; increment the Android version code.
+- Groups: optional Anytime, Morning, Afternoon, Evening assignment per habit, stored transactionally in the existing settings table. Old habits default to Anytime. Today groups only when a habit has an assignment, preserves custom order within each group, and keeps all existing scheduling/history semantics.
+- Reminder actions: Done completes only the scheduled occurrence's current local day, idempotently. Snooze schedules a single quiet reminder ten minutes later. Reject stale/deleted/archived/unscheduled/already-completed occurrences. Cancel snoozes after completion, reminder disable, removal, or archive; don't alter normal recurring reminders or the separate test reminder. Handle cold/background actions and refresh the running UI.
+- Android widget: use SDK 58's recommended widget support. Show local dated progress and a short habit list, with access to Still. Persisted SQLite remains authoritative; do not pretend an isolated widget-only toggle saved a check-in. Keep other platforms compiling with platform-specific integration. Show a clear freshness/date label if background refresh cannot be guaranteed.
+- Verify strict types, lint, meaningful pure/SQLite tests, platform exports, generated release privacy configuration, Android upgrade preserving a seeded prior-build habit, action delivery/cancellation, grouping, widget add/open/update, and offline launch. Record actual limitations and remove QA data after awaited persistence.
+
+The user approved all listed work and delegates routine decisions. Snooze is ten minutes; existing habits remain ungrouped; the widget prioritizes opening Still over an unpersisted optimistic checkmark. This repository has no Git metadata, so use local source snapshots instead of a worktree/commits.

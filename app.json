@@ -1,0 +1,79 @@
+{
+  "expo": {
+    "name": "Still",
+    "slug": "still",
+    "version": "1.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "scheme": "still",
+    "plugins": [
+      "./plugins/with-offline-android.cjs",
+      "expo-router",
+      "expo-sqlite",
+      [
+        "expo-notifications",
+        {
+          "color": "#6B56BB"
+        }
+      ],
+      "@react-native-community/datetimepicker",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 130,
+          "backgroundColor": "#F7F7FC",
+          "dark": {
+            "image": "./assets/splash-icon-dark.png",
+            "backgroundColor": "#171522"
+          }
+        }
+      ],
+      "expo-font",
+      "expo-localization",
+      [
+        "expo-widgets",
+        {
+          "widgets": [
+            {
+              "displayName": "Still — Today",
+              "ios": null,
+              "name": "StillToday",
+              "description": "Your local habit progress. Open Still to check in or refresh.",
+              "android": {
+                "targetCellWidth": 4,
+                "resizeMode": "both",
+                "targetCellHeight": 2,
+                "minWidth": 180,
+                "minHeight": 110,
+                "initialLayout": "src/widgets/TodayWidget.android.tsx"
+              }
+            }
+          ],
+          "enableAndroid": true
+        }
+      ]
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.still.habits"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#6B56BB",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": true,
+      "package": "com.still.habits",
+      "allowBackup": false,
+      "versionCode": 2
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    }
+  }
+}
