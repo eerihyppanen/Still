@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { dailyProgress, todayHabits } from "../src/domain/history";
+import { dailyProgress, todayHabits, weeklyRecap } from "../src/domain/history";
 import { summarize } from "../src/domain/habits";
 import type { Habit, Completion } from "../src/domain/models";
 const h: Habit = {
@@ -16,6 +16,43 @@ const h: Habit = {
   reminderTime: null,
 };
 const records: Completion[] = [{ habitId: "h", date: "2026-10-26" }];
+test("weekly recap keeps historical check-ins and ranks consistency by completion rate", () => {
+  const archived: Habit = {
+    ...h,
+    id: "read",
+    name: "Read",
+    archived: true,
+    schedules: [{ effectiveDate: "2026-10-26", weekdays: [1] }],
+    periods: [{ startDate: "2026-10-26", endDate: "2026-10-27" }],
+  };
+  const recap = weeklyRecap(
+    [h, archived],
+    [
+      ...records,
+      ...records,
+      { habitId: "read", date: "2026-10-26" },
+      { habitId: "h", date: "2026-10-30" },
+    ],
+    "2026-10-28",
+  );
+  assert.deepEqual(recap.total, { completed: 2, scheduled: 4, rate: 50 });
+  assert.equal(recap.mostConsistent?.habit.id, "read");
+  assert.deepEqual(
+    recap.hardestDays.map((day) => day.date),
+    ["2026-10-27"],
+  );
+});
+
+test("hardest days exclude rest days and today, and keep ties in calendar order", () => {
+  const recap = weeklyRecap([h], records, "2026-11-01");
+  assert.deepEqual(
+    recap.hardestDays.map((day) => day.date),
+    ["2026-10-27", "2026-10-28", "2026-10-29", "2026-10-30"],
+  );
+  const firstDay = weeklyRecap([h], [], "2026-10-26");
+  assert.deepEqual(firstDay.hardestDays, []);
+  assert.equal(firstDay.mostConsistent, undefined);
+});
 test("daily progress uses actual check-ins and marks future dates as having no results", () => {
   assert.deepEqual(
     dailyProgress(

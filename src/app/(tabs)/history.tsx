@@ -2,6 +2,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { Button, Empty, Heading, Screen, Section } from "../../components/ui";
 import { CalendarHistory } from "../../components/CalendarHistory";
 import { Statistics } from "../../components/Statistics";
+import { WeeklyRecap } from "../../components/WeeklyRecap";
 import { useApp } from "../../state/AppProvider";
 import { parseDate } from "../../domain/dates";
 export default function History() {
@@ -45,6 +46,8 @@ export default function History() {
             records={completions}
             today={today}
           />
+          <Section title="Weekly recap" />
+          <WeeklyRecap />
           <Section title="The bigger picture" />
           <Statistics />
         </>

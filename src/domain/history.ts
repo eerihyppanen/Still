@@ -1,5 +1,6 @@
 import type { Completion, DateKey, Habit } from "./models";
 import { isScheduled, summarize } from "./habits";
+import { weekDates } from "./dates";
 export function dailyProgress(
   habits: Habit[],
   records: Completion[],
@@ -22,4 +23,43 @@ export function todayHabits(
       (isScheduled(h, today) ||
         records.some((c) => c.habitId === h.id && c.date === today)),
   );
+}
+
+export function weeklyRecap(
+  habits: Habit[],
+  records: Completion[],
+  today: DateKey,
+) {
+  const dates = weekDates(today).filter((date) => date <= today);
+  const total = summarize(habits, records, dates, today);
+  const mostConsistent = habits
+    .map((habit) => ({ habit, ...summarize([habit], records, dates, today) }))
+    .filter((result) => result.completed > 0)
+    .sort(
+      (a, b) =>
+        b.completed * a.scheduled - a.completed * b.scheduled ||
+        b.completed - a.completed ||
+        a.habit.name.localeCompare(b.habit.name),
+    )[0];
+  const missedDays = dailyProgress(
+    habits,
+    records,
+    dates.slice(0, -1),
+    today,
+  ).filter((day) => day.completed < day.scheduled);
+  const lowest = missedDays.reduce<(typeof missedDays)[number] | undefined>(
+    (lowest, day) =>
+      !lowest ||
+      day.completed * lowest.scheduled < lowest.completed * day.scheduled
+        ? day
+        : lowest,
+    undefined,
+  );
+  const hardestDays = lowest
+    ? missedDays.filter(
+        (day) =>
+          day.completed * lowest.scheduled === lowest.completed * day.scheduled,
+      )
+    : [];
+  return { dates, total, mostConsistent, hardestDays };
 }

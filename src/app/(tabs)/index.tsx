@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { View, Pressable, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -12,6 +13,7 @@ import {
 } from "../../components/ui";
 import { ProgressRing } from "../../components/ProgressRing";
 import { HabitRow } from "../../components/HabitRow";
+import { Disclosure } from "../../components/Disclosure";
 import { useApp } from "../../state/AppProvider";
 import { useTheme } from "../../theme/ThemeProvider";
 import { habitStats } from "../../domain/habits";
@@ -23,16 +25,34 @@ export default function Today() {
   const { habits, completions, today, busy, setCompletion } = useApp();
   const { colors } = useTheme();
   const { width, fontScale } = useWindowDimensions();
+  const [expandedDate, setExpandedDate] = useState<string | null>(null);
   const scheduled = todayHabits(habits, completions, today);
   const groups = groupTodayHabits(scheduled);
   const done = new Set(
     completions.filter((c) => c.date === today).map((c) => c.habitId),
   );
   const completed = scheduled.filter((h) => done.has(h.id)).length;
+  const completedExpanded = expandedDate === today;
   const hasActiveHabits = habits.some((habit) => !habit.archived);
   const hour = new Date().getHours();
   const greeting =
     hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  function renderHabit(habit: (typeof scheduled)[number]) {
+    return (
+      <HabitRow
+        key={habit.id}
+        habit={habit}
+        completed={done.has(habit.id)}
+        streak={habitStats(habit, completions, today).currentStreak}
+        disabled={busy}
+        onToggle={() =>
+          void setCompletion(habit.id, today, !done.has(habit.id)).catch(
+            () => undefined,
+          )
+        }
+      />
+    );
+  }
   return (
     <Screen contentContainerStyle={{ gap: 16, paddingTop: 16 }}>
       <View style={s.row}>
@@ -177,7 +197,7 @@ export default function Today() {
           </View>
         </Card>
       )}
-      {groups.length <= 1 && (
+      {(groups.length <= 1 || completed === scheduled.length) && (
         <Section
           title={groups[0]?.title ?? "Today’s habits"}
           aside={scheduled.length ? `${scheduled.length} planned` : undefined}
@@ -203,29 +223,45 @@ export default function Today() {
         />
       ) : (
         <View style={{ gap: 12 }}>
-          {groups.map((group) => (
-            <View key={group.key} style={{ gap: 12 }}>
-              {groups.length > 1 && (
-                <Section title={group.title} aside={`${group.habits.length}`} />
-              )}
-              {group.habits.map((habit) => (
-                <HabitRow
-                  key={habit.id}
-                  habit={habit}
-                  completed={done.has(habit.id)}
-                  streak={habitStats(habit, completions, today).currentStreak}
-                  disabled={busy}
-                  onToggle={() =>
-                    void setCompletion(
-                      habit.id,
-                      today,
-                      !done.has(habit.id),
-                    ).catch(() => undefined)
-                  }
-                />
-              ))}
-            </View>
-          ))}
+          {groups.map((group) => {
+            const unfinished = group.habits.filter(
+              (habit) => !done.has(habit.id),
+            );
+            if (!unfinished.length) return null;
+            return (
+              <View key={group.key} style={{ gap: 12 }}>
+                {groups.length > 1 && (
+                  <Section
+                    title={group.title}
+                    aside={`${unfinished.length} left`}
+                  />
+                )}
+                {unfinished.map(renderHabit)}
+              </View>
+            );
+          })}
+          {completed > 0 && (
+            <Disclosure
+              title={`${completed} completed`}
+              summary="Review or undo check-ins"
+              expanded={completedExpanded}
+              onToggle={() => setExpandedDate(completedExpanded ? null : today)}
+            >
+              {completedExpanded &&
+                groups.map((group) => {
+                  const finished = group.habits.filter((habit) =>
+                    done.has(habit.id),
+                  );
+                  if (!finished.length) return null;
+                  return (
+                    <View key={group.key} style={{ gap: 12 }}>
+                      {groups.length > 1 && <Txt muted>{group.title}</Txt>}
+                      {finished.map(renderHabit)}
+                    </View>
+                  );
+                })}
+            </Disclosure>
+          )}
         </View>
       )}
       <Txt size={13} muted style={{ textAlign: "center", paddingVertical: 4 }}>
