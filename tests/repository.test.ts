@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { HabitRepository } from "../src/data/repository";
+import { HabitRepository, type SqlParam } from "../src/data/repository";
 import { sqliteAdapter } from "./sqlite-adapter";
 import type { HabitDraft } from "../src/domain/models";
 import { isScheduled, habitStats } from "../src/domain/habits";
@@ -600,6 +600,50 @@ test("check-in mutations report actual changes rather than duplicate requests", 
       await repo.setCompletion(id, "2026-10-28", false, "2026-10-28"),
       false,
     );
+  } finally {
+    close();
+  }
+});
+
+test("a check-in returns its saved snapshot without a second database read", async () => {
+  const { db, close } = sqliteAdapter();
+  let saved = false;
+  const repo = new HabitRepository({
+    ...db,
+    async runAsync(sql, ...params) {
+      const result = await db.runAsync(sql, ...params);
+      if (sql.includes("INTO completions") || sql.includes("FROM completions"))
+        saved = true;
+      return result;
+    },
+    async getAllAsync<T>(sql: string, ...params: SqlParam[]) {
+      assert.equal(
+        saved,
+        false,
+        "A saved check-in should already have its snapshot",
+      );
+      return db.getAllAsync<T>(sql, ...params);
+    },
+  });
+  try {
+    const today = "2026-10-28";
+    await repo.initialize();
+    const id = await repo.saveHabit(draft, today);
+    const completed = await repo.setCompletionAndSnapshot(
+      id,
+      today,
+      true,
+      today,
+    );
+    assert.equal(completed.changed, true);
+    assert.deepEqual(completed.snapshot.completions, [
+      { habitId: id, date: today },
+    ]);
+    saved = false;
+    const undone = await repo.setCompletionAndSnapshot(id, today, false, today);
+    assert.equal(undone.changed, true);
+    assert.deepEqual(undone.snapshot.completions, []);
+    assert.deepEqual(undone.snapshot.habits, completed.snapshot.habits);
   } finally {
     close();
   }

@@ -76,20 +76,39 @@ export function AppProvider({ children }: React.PropsWithChildren) {
       }
     }
   }, [snapshot, today, initialized]);
+  const publishSnapshot = useCallback(
+    (data: Snapshot) => {
+      setSnapshot(data);
+      setMode(data.settings.theme);
+      setInitialized(true);
+    },
+    [setMode],
+  );
+  const updateReminders = useCallback(
+    async (data: Snapshot, isActive: () => boolean = () => true) => {
+      try {
+        const status = await syncReminders(
+          data.habits,
+          data.settings.remindersEnabled,
+          dateKey(),
+          data.completions,
+        );
+        if (isActive()) setNotificationStatus(status);
+      } catch {
+        if (isActive())
+          setNotificationStatus({
+            state: "error",
+            message: "Reminders could not be updated. Reopen the app to retry.",
+          });
+      }
+    },
+    [],
+  );
   const refresh = useCallback(async () => {
     const data = await (await getRepository()).snapshot();
-    setSnapshot(data);
-    setMode(data.settings.theme);
-    setInitialized(true);
-    setNotificationStatus(
-      await syncReminders(
-        data.habits,
-        data.settings.remindersEnabled,
-        dateKey(),
-        data.completions,
-      ),
-    );
-  }, [setMode]);
+    publishSnapshot(data);
+    await updateReminders(data);
+  }, [publishSnapshot, updateReminders]);
   const reload = useCallback(async () => {
     setError(null);
     setLoading(true);
@@ -112,18 +131,9 @@ export function AppProvider({ children }: React.PropsWithChildren) {
       .then(
         (data) => {
           if (active) {
-            setSnapshot(data);
-            setMode(data.settings.theme);
-            setInitialized(true);
+            publishSnapshot(data);
             setLoading(false);
-            void syncReminders(
-              data.habits,
-              data.settings.remindersEnabled,
-              dateKey(),
-              data.completions,
-            ).then((status) => {
-              if (active) setNotificationStatus(status);
-            });
+            void updateReminders(data, () => active);
           }
         },
         (e) => {
@@ -138,7 +148,7 @@ export function AppProvider({ children }: React.PropsWithChildren) {
     return () => {
       active = false;
     };
-  }, [setMode]);
+  }, [publishSnapshot, updateReminders]);
   useEffect(
     () =>
       subscribeReminderActions(
@@ -170,13 +180,14 @@ export function AppProvider({ children }: React.PropsWithChildren) {
   }, [refresh]);
   async function mutate<T>(
     action: (repository: HabitRepository) => Promise<T>,
+    afterSave: (result: T) => void | Promise<void> = refresh,
   ): Promise<T> {
     pending.current++;
     setBusy(true);
     setError(null);
     try {
       const result = await action(await getRepository());
-      await refresh();
+      await afterSave(result);
       return result;
     } catch (e) {
       setError(
@@ -206,10 +217,17 @@ export function AppProvider({ children }: React.PropsWithChildren) {
           mutate((repo) => repo.saveHabit(draft, dateKey(), id)),
         setCompletion: (id, date, complete) =>
           saveCheckIn(
-            () =>
-              mutate((repo) =>
-                repo.setCompletion(id, date, complete, dateKey()),
-              ),
+            async () => {
+              const { changed } = await mutate(
+                (repo) =>
+                  repo.setCompletionAndSnapshot(id, date, complete, dateKey()),
+                ({ snapshot: data }) => {
+                  publishSnapshot(data);
+                  void updateReminders(data);
+                },
+              );
+              return changed;
+            },
             playCheckInFeedback,
             snapshot.settings.hapticsEnabled,
             complete,

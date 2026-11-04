@@ -269,29 +269,56 @@ export class HabitRepository {
     });
   }
   setCompletion(id: string, date: DateKey, complete: boolean, today: DateKey) {
-    return this.serial(async () => {
-      parseDate(date);
-      parseDate(today);
-      if (date > today) throw new Error("Future dates cannot be completed.");
-      const habit = (await this.readSnapshot()).habits.find((h) => h.id === id);
-      if (!habit) throw new Error("This habit no longer exists.");
-      if (complete) {
-        if (!isScheduled(habit, date))
-          throw new Error("This habit was not scheduled for that date.");
+    return this.setCompletionAndSnapshot(id, date, complete, today).then(
+      ({ changed }) => changed,
+    );
+  }
+  setCompletionAndSnapshot(
+    id: string,
+    date: DateKey,
+    complete: boolean,
+    today: DateKey,
+  ) {
+    return this.serial(() =>
+      this.transaction(async () => {
+        parseDate(date);
+        parseDate(today);
+        if (date > today) throw new Error("Future dates cannot be completed.");
+        const snapshot = await this.readSnapshot();
+        const habit = snapshot.habits.find((h) => h.id === id);
+        if (!habit) throw new Error("This habit no longer exists.");
+        const index = snapshot.completions.findIndex(
+          (entry) => entry.habitId === id && entry.date === date,
+        );
+        if (complete) {
+          if (!isScheduled(habit, date))
+            throw new Error("This habit was not scheduled for that date.");
+          const result = await this.db.runAsync(
+            "INSERT OR IGNORE INTO completions (habit_id,date) VALUES (?,?)",
+            id,
+            date,
+          );
+          if (index < 0) {
+            const nextDate = snapshot.completions.findIndex(
+              (entry) => entry.date > date,
+            );
+            snapshot.completions.splice(
+              nextDate < 0 ? snapshot.completions.length : nextDate,
+              0,
+              { habitId: id, date },
+            );
+          }
+          return { changed: result.changes > 0, snapshot };
+        }
         const result = await this.db.runAsync(
-          "INSERT OR IGNORE INTO completions (habit_id,date) VALUES (?,?)",
+          "DELETE FROM completions WHERE habit_id=? AND date=?",
           id,
           date,
         );
-        return result.changes > 0;
-      }
-      const result = await this.db.runAsync(
-        "DELETE FROM completions WHERE habit_id=? AND date=?",
-        id,
-        date,
-      );
-      return result.changes > 0;
-    });
+        if (index >= 0) snapshot.completions.splice(index, 1);
+        return { changed: result.changes > 0, snapshot };
+      }),
+    );
   }
   setArchived(id: string, archived: boolean, today: DateKey) {
     return this.serial(() =>
