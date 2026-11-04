@@ -2,6 +2,12 @@
 
 Dates: October 27–November 4, 2026.
 
+## Still 1.2.1 Android APK — November 4, 2026
+
+- The leaf stem is present in the regenerated launcher and splash artwork. The Android adaptive foreground fits within a 295-pixel radius on the 1024-pixel canvas. The loading view and Today header use the same leaf asset.
+- `npm run check` passed strict TypeScript, Expo lint, and all 89 tests. Gradle assembly and Android release lint passed.
+- Verified the APK signature matches 1.2.0 and installed it as an update on the Pixel 7 emulator. Cold-launch recordings show the stem in both the Android splash and the in-app loading view. The launch completed on Today. The APK is version code 4 and excludes Android internet and network-state permissions.
+
 ## Still 1.2.0 Android APK — November 4, 2026
 
 - `npm run check` passed strict TypeScript, Expo lint, and all 89 tests. The local release build passed Gradle assembly and Android release lint.

@@ -35,7 +35,7 @@ png("android-icon-background.png", svg("", purple));
 const splash = (color) =>
   leaf
     .replace('viewBox="0 0 1024 1024"', 'viewBox="272 272 480 480"')
-    .replace('fill="#FFFFFF"', `fill="${color}"`);
+    .replaceAll("#FFFFFF", color);
 png("splash-icon.png", splash(purple));
 png("splash-icon-dark.png", splash("#CFC2FF"));
 // Review sheet uses the same vector: small masked icons + light/dark launch surfaces.
@@ -47,8 +47,8 @@ const sheet = `<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="570"
 <g transform="translate(476 106) scale(.0625)">${icon.replace(/^[\s\S]*?<svg[^>]*>/, "").replace(/<\/svg>$/, "")}</g>
 <text x="48" y="278" font-family="Segoe UI" font-size="16" fill="#57536A">Home-screen shapes · 64 px detail</text>
 <rect x="602" y="0" width="398" height="570" fill="#171522"/>
-<g transform="translate(170 320) scale(.24)">${body.replace('fill="#FFFFFF"', `fill="${purple}"`)}</g>
-<g transform="translate(680 185) scale(.24)">${body.replace('fill="#FFFFFF"', 'fill="#CFC2FF"')}</g>
+<g transform="translate(170 320) scale(.24)">${body.replaceAll("#FFFFFF", purple)}</g>
+<g transform="translate(680 185) scale(.24)">${body.replaceAll("#FFFFFF", "#CFC2FF")}</g>
 <text x="48" y="542" font-family="Segoe UI" font-size="16" fill="#57536A">Light splash</text><text x="630" y="542" font-family="Segoe UI" font-size="16" fill="#CFC2FF">Dark splash</text>
 </svg>`;
 fs.mkdirSync(path.join(root, "verification"), { recursive: true });

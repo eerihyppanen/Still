@@ -1,5 +1,7 @@
 import { ActivityIndicator, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Button, Empty, Screen, Txt } from "./ui";
+import { StillMark } from "./StillMark";
 import { useApp } from "../state/AppProvider";
 import { useTheme } from "../theme/ThemeProvider";
 export function AppGate({ children }: React.PropsWithChildren) {
@@ -7,12 +9,27 @@ export function AppGate({ children }: React.PropsWithChildren) {
   const { colors } = useTheme();
   if (loading)
     return (
-      <Screen>
-        <View style={{ paddingVertical: 100, alignItems: "center", gap: 16 }}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Txt muted>Opening your space…</Txt>
+      <SafeAreaView
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 24,
+          backgroundColor: colors.background,
+        }}
+      >
+        <StillMark size={96} />
+        <View style={{ alignItems: "center", gap: 12, marginTop: 24 }}>
+          <ActivityIndicator color={colors.primary} />
+          <Txt
+            muted
+            accessibilityLiveRegion="polite"
+            style={{ textAlign: "center" }}
+          >
+            Opening your space…
+          </Txt>
         </View>
-      </Screen>
+      </SafeAreaView>
     );
   if (error && !initialized)
     return (

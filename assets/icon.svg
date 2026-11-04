@@ -1,8 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><rect width="1024" height="1024" fill="#6B56BB"/><g transform="translate(512 512) scale(1.4) translate(-512 -512)">
-  <!-- One continuous silhouette, centered optically; vein stays inside the leaf. -->
+  <!-- Keep the vein inside the leaf so the rounded stem joins the silhouette. -->
   <mask id="leaf">
     <path d="M368 648C282 472 425 330 680 304C712 553 549 718 368 648Z" fill="white"/>
-    <path d="M355 679C412 562 487 483 588 413" fill="none" stroke="black" stroke-width="28" stroke-linecap="round"/>
+    <path d="M402 602C448 531 509 470 588 413" fill="none" stroke="black" stroke-width="28" stroke-linecap="round"/>
   </mask>
   <path d="M368 648C282 472 425 330 680 304C712 553 549 718 368 648Z" fill="#FFFFFF" mask="url(#leaf)"/>
+  <path d="M333 690Q354 657 386 626" fill="none" stroke="#FFFFFF" stroke-width="31" stroke-linecap="round"/>
 </g></svg>

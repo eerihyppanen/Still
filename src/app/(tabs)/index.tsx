@@ -14,6 +14,7 @@ import {
 import { ProgressRing } from "../../components/ProgressRing";
 import { HabitRow } from "../../components/HabitRow";
 import { Disclosure } from "../../components/Disclosure";
+import { StillMark } from "../../components/StillMark";
 import { useApp } from "../../state/AppProvider";
 import { useTheme } from "../../theme/ThemeProvider";
 import { habitStats } from "../../domain/habits";
@@ -57,7 +58,7 @@ export default function Today() {
     <Screen contentContainerStyle={{ gap: 16, paddingTop: 16 }}>
       <View style={s.row}>
         <View style={{ flexDirection: "row", gap: 7, alignItems: "center" }}>
-          <Ionicons name="leaf" color={colors.primary} size={21} />
+          <StillMark size={24} />
           <Txt weight="700" size={21}>
             still
           </Txt>

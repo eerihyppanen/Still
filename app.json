@@ -2,7 +2,7 @@
   "expo": {
     "name": "Still",
     "slug": "still",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -69,7 +69,7 @@
       "predictiveBackGestureEnabled": true,
       "package": "com.still.habits",
       "allowBackup": false,
-      "versionCode": 3
+      "versionCode": 4
     },
     "web": {
       "favicon": "./assets/favicon.png",
