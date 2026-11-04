@@ -1,6 +1,14 @@
 # Verification record
 
-Dates: October 27–30, 2026.
+Dates: October 27–November 4, 2026.
+
+## Still 1.2.0 Android APK — November 4, 2026
+
+- `npm run check` passed strict TypeScript, Expo lint, and all 89 tests. The local release build passed Gradle assembly and Android release lint.
+- Verified the APK signature matches Still 1.1.0. The APK is `com.still.habits`, version code 3, with arm64-v8a and x86_64 support. The packaged manifest excludes Android internet and network-state permissions.
+- Installed 1.2.0 over 1.1.0 on the Pixel 7 emulator. Two test habits and their saved check-in survived the update. Today started with the completed habit folded away, then showed the saved state on expansion. Undo moved it back to the unfinished list. History showed 1 of 2 planned check-ins and identified the completed routine as most consistent.
+- Dragged a habit from first to second on Android and observed the saved position. Browser and emulator tests cover these flows. Physical phone testing remains pending.
+- The release APK and checksum are available from the private [Still 1.2.0 release](https://github.com/eerihyppanen/Still/releases/tag/v1.2.0).
 
 ## Verified so far
 

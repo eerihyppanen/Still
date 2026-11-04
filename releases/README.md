@@ -1,7 +1,10 @@
-# Still 1.1.0 for Android
+# Still 1.2.0 for Android
 
-Open `Still-1.1.0.apk` on your phone and choose Update/Install. **Keep the old app installed** so Android retains its local history. This build uses the same package and signing certificate as the previous test APKs.
+Sign in to GitHub on your phone, then open the [Still 1.2.0 release](https://github.com/eerihyppanen/Still/releases/tag/v1.2.0). Download `Still-1.2.0.apk` from Assets, open it, and choose Update or Install. **Keep the old app installed** so Android retains its local history. This build uses the same package and signing certificate as the previous test APKs.
 
+- On Today, expand the completed row to review or undo check-ins.
+- In History, the weekly recap shows your progress, most consistent routine, and hardest past days.
+- In Habits → Reorder, drag the grip to change the order. Still also has a refreshed leaf icon and splash artwork.
 - In a habit's edit form, choose Anytime, Morning, Afternoon or Evening.
 - Expand a habit notification for Done and Snooze 10 min.
 - Long-press your home screen → Widgets → Still → Still — Today to add the compact widget. It shows the saved date/progress; Open Still refreshes it and opens the app for check-ins.
@@ -9,4 +12,4 @@ Open `Still-1.1.0.apk` on your phone and choose Update/Install. **Keep the old a
 
 Uninstalling or losing the phone can lose local history. The update prevents future automatic backups; it cannot remove backups made by an earlier version.
 
-SHA-256 is in `SHA256SUMS.txt`. Emulator upgrade/offline/action/widget checks, TypeScript, lint, 80 tests and all-platform exports passed. Expo Doctor's existing core SDK patch warnings and remaining physical-phone/iOS checks are recorded in `../VERIFICATION.md`.
+SHA-256 is in `SHA256SUMS.txt`. Build and emulator evidence is recorded in `../VERIFICATION.md`.

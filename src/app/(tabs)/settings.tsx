@@ -106,7 +106,7 @@ export default function Settings() {
         </Txt>
         <Txt muted>One small step, every day.</Txt>
         <Txt size={13} muted>
-          Your habits stay on this device. Version 1.1.0
+          Your habits stay on this device. Version 1.2.0
         </Txt>
         <Txt size={13} muted>
           Works without internet. No account or cloud sync. The Android update
