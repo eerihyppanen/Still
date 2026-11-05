@@ -1,6 +1,20 @@
 # Verification record
 
-Dates: October 27–November 4, 2026.
+Dates: October 27–November 5, 2026.
+
+## Compact History and Settings — November 5, 2026
+
+Source update from `C:\Users\eehyp\Desktop\Still`; no new APK or version bump. The existing 1.2.1 APK does not contain this update.
+
+- History opens on Calendar, with compact day rows and a separate Insights view for the weekly recap and statistics. Calendar cells retain a 44-pixel minimum height, and checkboxes retain their 48-pixel touch area. Long habit names wrap.
+- Settings has one-row appearance choices, shorter reminder/vibration rows, and expandable Reminder help, archived habits, Android widget instructions, and About. Permission recovery and retry remain outside the collapsed help. Web accessibility exposes choice state and section expansion.
+- `npm run check` passed strict TypeScript, Expo lint and all **90 tests**, zero failures, after the final product change. Log: `.expo/compact-final-check.log`.
+- Final Android Metro/Hermes bundle export passed to `.expo/compact-android-export`. Log: `.expo/compact-export.log`.
+- Actual browser checks used isolated `localhost:8084` at 390 × 844 and 320 × 740. Created disposable habits, checked/unchecked through Calendar, confirmed check-in persistence after reload, switched Calendar/Insights, retained the selected date, checked the recap/statistics values, verified future dates are disabled, and navigated through the compact row to habit details.
+- Browser verification covered Light/Dark/System, saved theme after reload, keyboard activation of appearance choices, expanded reminder help and About, and archive/restore through the archived-habits disclosure. The 320-pixel page had no horizontal overflow. Screenshots: [Calendar](./verification/compact-history-web.png), [Settings](./verification/compact-settings-web.png).
+- Review found an older repeated-date-link issue. Reproduced Today → November 5 → browse November 4 → Today → November 5 still showing November 4. History now controls the selected calendar date through the route. Repeating the flow opens November 5; selection also survives view switching and browser reload. Keyboard activation keeps focus on the date button. Month follows the selected date without remounting the calendar. Habit-detail calendars retain local selection.
+- Independent review of the final source found no remaining actionable issues. Native notification scheduling, schema, dependencies and offline configuration are unchanged. This update's native reminder-help controls, permission recovery, TalkBack/VoiceOver and large device text have not been rerun on a phone/emulator.
+- All disposable habits were removed, the QA theme was restored to System, the temporary viewport was reset, and verification tabs/server were closed. No personal habits or existing preview-origin storage were changed. The preview manifest confirmed the Desktop folder as both developer and internal project root.
 
 ## Still 1.2.1 Android APK — November 4, 2026
 
@@ -20,7 +34,7 @@ Dates: October 27–November 4, 2026.
 
 - TypeScript strict checks, including tests.
 - Expo ESLint.
-- 87 automated local-date, scheduling, streak, label, history, SQLite, habit-order, drag-geometry, time-of-day-group, draft-validation, custom-emoji, time-format, check-in-feedback, reminder-action, widget-snapshot, and offline-policy tests passed, zero failures.
+- 90 automated local-date, scheduling, streak, label, history, SQLite, habit-order, drag-geometry, time-of-day-group, draft-validation, custom-emoji, time-format, check-in-feedback, reminder-action, widget-snapshot, and offline-policy tests passed, zero failures.
 - Calendar/streak/history/reminder-action/widget suite passed in four time zones: Europe/Helsinki, America/New_York, Asia/Kolkata, Pacific/Honolulu (30 tests per time zone on October 30).
 - Android Metro/Hermes exports after each implementation phase.
 - Browser UI: empty start, real habit creation, completed state, completion persistence after reload, light theme preference persistence, history calendar and actual chart statistics, detail screen, edited description/weekdays/reminder time, confirmed archive and restore, browser reminder limitation message.

@@ -76,9 +76,9 @@ For an installed Expo Go that supports SDK 58, `npx expo start --go` is also an 
 - Optionally organize Today into Morning, Afternoon, Evening, and Anytime sections. Zero streaks say “Start today”; future week-strip dates are disabled.
 - Edit, archive, restore, or permanently delete a habit with confirmation.
 - Put routines in your preferred order: open Habits, choose Reorder, then drag a habit's grip. Other rows move as you drag; hold near the top/bottom to scroll a longer list. Let go to save, then choose Done. Keyboard arrows and screen-reader Move up/Move down actions are also available. The order stays saved after reopening and appears within Today's time-of-day groups.
-- Browse monthly history, update past scheduled check-ins, and use Back to today to return from another date or month.
-- See real weekly/monthly progress, total check-ins, completion rate, and current/longest habit streaks.
-- Choose light, dark, or device appearance. Manage archived habits and notification preferences in Settings.
+- Browse History → Calendar, update check-ins in compact day rows, and use Back to today to return from another date or month. The selected date stays in place when switching views.
+- Open History → Insights for the weekly recap, weekly/monthly progress, total check-ins, completion rate, and current/longest habit streaks.
+- Choose light, dark, or device appearance in one row. Settings keeps reminder status visible and folds Reminder help, archived habits, Android widget instructions, and About Still into expandable sections.
 - Leave an unfinished habit edit safely: Keep editing retains the draft; Discard changes leaves without saving. Invalid saves show errors beside the affected fields.
 - Use your phone's preferred 12/24-hour time display in reminder controls. Times remain stored as local HH:MM values.
 - Enable optional check-in vibration in Settings. It starts off and only plays after a new completion saves; unchecking stays quiet.

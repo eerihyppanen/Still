@@ -1,14 +1,20 @@
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { View } from "react-native";
 import { Button, Empty, Heading, Screen, Section } from "../../components/ui";
 import { CalendarHistory } from "../../components/CalendarHistory";
 import { Statistics } from "../../components/Statistics";
 import { WeeklyRecap } from "../../components/WeeklyRecap";
 import { useApp } from "../../state/AppProvider";
 import { parseDate } from "../../domain/dates";
+import { ChoiceControl } from "../../components/ChoiceControl";
 export default function History() {
   const router = useRouter();
   const { habits, completions, today } = useApp();
-  const { date } = useLocalSearchParams<{ date?: string }>();
+  const { date, view } = useLocalSearchParams<{
+    date?: string;
+    view?: string;
+  }>();
+  const activeView = view === "insights" ? "insights" : "calendar";
   let selected = today;
   try {
     if (date) {
@@ -20,10 +26,7 @@ export default function History() {
   }
   return (
     <Screen>
-      <Heading
-        title="Look how far you’ve come."
-        subtitle="Every check-in is a small promise kept."
-      />
+      <Heading title="History" />
       {!habits.length ? (
         <Empty
           icon="calendar-outline"
@@ -38,18 +41,35 @@ export default function History() {
         />
       ) : (
         <>
-          <Section title="Your calendar" />
-          <CalendarHistory
-            key={selected}
-            initialDate={selected}
-            habits={habits}
-            records={completions}
-            today={today}
+          <ChoiceControl
+            options={
+              [
+                { value: "calendar", label: "Calendar" },
+                { value: "insights", label: "Insights" },
+              ] as const
+            }
+            value={activeView}
+            onChange={(value) => router.setParams({ view: value })}
           />
-          <Section title="Weekly recap" />
-          <WeeklyRecap />
-          <Section title="The bigger picture" />
-          <Statistics />
+          <View
+            style={{ display: activeView === "calendar" ? "flex" : "none" }}
+          >
+            <CalendarHistory
+              selectedDate={selected}
+              habits={habits}
+              records={completions}
+              today={today}
+              onDateChange={(date) => router.setParams({ date })}
+            />
+          </View>
+          {activeView === "insights" && (
+            <>
+              <Section title="Weekly recap" />
+              <WeeklyRecap />
+              <Section title="The bigger picture" />
+              <Statistics />
+            </>
+          )}
         </>
       )}
     </Screen>

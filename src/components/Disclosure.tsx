@@ -28,6 +28,8 @@ export function Disclosure({
           accessibilityRole="button"
           accessibilityLabel={`${title}. ${summary}`}
           accessibilityState={{ expanded, disabled }}
+          aria-expanded={expanded}
+          aria-disabled={disabled}
           disabled={disabled}
           onPress={onToggle}
           style={({ pressed }) => ({

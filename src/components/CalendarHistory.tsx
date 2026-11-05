@@ -15,16 +15,22 @@ export function CalendarHistory({
   records,
   today,
   initialDate = today,
+  selectedDate,
+  onDateChange,
 }: {
   habits: Habit[];
   records: Completion[];
   today: DateKey;
   initialDate?: DateKey;
+  selectedDate?: DateKey;
+  onDateChange?: (date: DateKey) => void;
 }) {
-  const [month, setMonth] = useState(initialDate.slice(0, 7) + "-01");
-  const [selected, setSelected] = useState(
+  const [localDate, setLocalDate] = useState(
     initialDate > today ? today : initialDate,
   );
+  const date = selectedDate ?? localDate;
+  const selected = date > today ? today : date;
+  const month = selected.slice(0, 7) + "-01";
   const { colors } = useTheme();
   const app = useApp();
   const days = useMemo(
@@ -44,13 +50,16 @@ export function CalendarHistory({
   const done = new Set(
     records.filter((r) => r.date === selected).map((r) => r.habitId),
   );
+  function selectDate(date: DateKey) {
+    setLocalDate(date);
+    onDateChange?.(date);
+  }
   function changeMonth(amount: number) {
     const next = shiftMonth(month, amount);
-    setMonth(next);
-    setSelected(next.slice(0, 7) === today.slice(0, 7) ? today : next);
+    selectDate(next.slice(0, 7) === today.slice(0, 7) ? today : next);
   }
   return (
-    <Card style={{ padding: 16 }}>
+    <Card style={{ padding: 16, gap: 8 }}>
       <View style={s.row}>
         <Pressable
           accessibilityRole="button"
@@ -95,7 +104,7 @@ export function CalendarHistory({
       </View>
       <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
         {Array.from({ length: offset }, (_, i) => (
-          <View key={`blank-${i}`} style={{ width: "14.2857%", height: 48 }} />
+          <View key={`blank-${i}`} style={{ width: "14.2857%", height: 44 }} />
         ))}
         {days.map((day) => {
           const full = day.scheduled > 0 && day.completed === day.scheduled;
@@ -109,11 +118,11 @@ export function CalendarHistory({
               }}
               accessibilityLabel={`${formatDate(day.date, { month: "long", day: "numeric" })}, ${day.completed} of ${day.scheduled} complete`}
               disabled={day.date > today}
-              onPress={() => setSelected(day.date)}
+              onPress={() => selectDate(day.date)}
               hitSlop={2}
               style={{
                 width: "14.2857%",
-                minHeight: 48,
+                minHeight: 44,
                 padding: 2,
                 opacity: day.date > today ? 0.3 : 1,
               }}
@@ -180,12 +189,9 @@ export function CalendarHistory({
           <HabitRow
             key={habit.id}
             habit={habit}
+            compact
             completed={done.has(habit.id)}
-            subtitle={
-              habit.archived
-                ? "Archived habit"
-                : "Tap the check to update this day"
-            }
+            subtitle={habit.archived ? "Archived habit" : undefined}
             disabled={app.busy}
             onToggle={() =>
               void app
@@ -200,8 +206,7 @@ export function CalendarHistory({
           title="Back to today"
           variant="secondary"
           onPress={() => {
-            setMonth(today.slice(0, 7) + "-01");
-            setSelected(today);
+            selectDate(today);
           }}
         />
       )}

@@ -117,7 +117,7 @@ export default function Today() {
             onPress={() =>
               router.push({
                 pathname: "/(tabs)/history",
-                params: { date: day },
+                params: { date: day, view: "calendar" },
               })
             }
             style={{

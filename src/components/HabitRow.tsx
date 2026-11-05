@@ -23,6 +23,7 @@ export function HabitRow({
   onToggle,
   disabled,
   subtitle,
+  compact = false,
 }: {
   habit: Habit;
   completed?: boolean;
@@ -30,6 +31,7 @@ export function HabitRow({
   onToggle?: () => void;
   disabled?: boolean;
   subtitle?: string;
+  compact?: boolean;
 }) {
   const router = useRouter();
   const { colors, dark } = useTheme();
@@ -54,8 +56,9 @@ export function HabitRow({
           backgroundColor: colors.surface,
           borderWidth: 1,
           borderColor: completed ? colors.success : colors.border,
-          borderRadius: 22,
-          paddingRight: 12,
+          borderRadius: compact ? 14 : 22,
+          paddingRight: compact ? 4 : 12,
+          gap: compact ? 4 : 12,
           transform: [{ scale }],
         },
       ]}
@@ -70,25 +73,27 @@ export function HabitRow({
           flex: 1,
           flexDirection: "row",
           alignItems: "center",
-          padding: 16,
-          gap: 14,
+          padding: compact ? 8 : 16,
+          minHeight: compact ? 56 : undefined,
+          gap: compact ? 10 : 14,
           opacity: pressed ? 0.7 : 1,
         })}
       >
         <View
           style={{
-            width: 50,
-            height: 50,
+            width: compact ? 32 : 50,
+            height: compact ? 32 : 50,
             backgroundColor: dark ? colors.tint : `${habit.color}14`,
-            borderRadius: 18,
+            borderRadius: compact ? 10 : 18,
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <Txt size={25}>{habit.emoji}</Txt>
+          <Txt size={compact ? 20 : 25}>{habit.emoji}</Txt>
         </View>
         <View style={{ flex: 1, gap: 5 }}>
           <Txt
+            size={compact ? 15 : 16}
             weight="600"
             style={
               completed
@@ -98,17 +103,25 @@ export function HabitRow({
           >
             {habit.name}
           </Txt>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-            {streak !== undefined && streak > 0 && (
-              <Ionicons name="flame-outline" size={14} color={colors.primary} />
-            )}
-            <Txt size={13} muted>
-              {subtitle ??
-                (streak !== undefined
-                  ? streakLabel(streak)
-                  : scheduleLabel(habit))}
-            </Txt>
-          </View>
+          {(!compact || subtitle) && (
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 5 }}
+            >
+              {streak !== undefined && streak > 0 && (
+                <Ionicons
+                  name="flame-outline"
+                  size={14}
+                  color={colors.primary}
+                />
+              )}
+              <Txt size={13} muted>
+                {subtitle ??
+                  (streak !== undefined
+                    ? streakLabel(streak)
+                    : scheduleLabel(habit))}
+              </Txt>
+            </View>
+          )}
         </View>
       </Pressable>
       {onToggle ? (

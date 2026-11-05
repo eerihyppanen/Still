@@ -1,5 +1,13 @@
 # Implementation phases
 
+## Compact History and Settings — November 5, 2026
+
+History now separates Calendar and Insights. The calendar retains comfortable date buttons and uses shorter habit rows with separate detail and check-in actions. Its selected date is controlled by the History route, while the habit-detail calendar keeps local selection. This also fixes repeated Today date links leaving an older browsed date selected, without remounting the calendar or losing keyboard focus.
+
+Settings uses one shared choice control for appearance, compact reminder/vibration rows, and expandable Reminder help, archived habits, Android widget instructions, and About. Permission recovery and retry actions remain visible outside the help section. Browser accessibility exposes selected choices and expanded sections. Storage, notification scheduling, native dependencies and app version are unchanged.
+
+See VERIFICATION.md for the actual checks and browser results. This is a source update; the existing APK does not include it.
+
 ## Icon and drag reordering — October 30, 2026 (source update)
 
 The leaf is now a single centered silhouette with an internal vein. `assets/leaf.svg` is the editable master, and `scripts/generate-brand-assets.cjs` renders app/favicon PNGs, safe-zone Android foreground/monochrome PNGs, and transparent light/dark splash marks. The render tool is a pinned, temporary `@resvg/resvg-js@2.6.2` npm tool; it is not an app dependency. Pass its cached module directory to the script. The app's package/version and offline policy are unchanged. Native resources will be generated from `app.json` on the next requested build; no APK or native prebuild was run for this update.
