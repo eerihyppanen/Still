@@ -1,6 +1,41 @@
 # Verification record
 
-Dates: October 27–November 5, 2026.
+Dates: October 27–November 6, 2026.
+
+## Three-pass review and Still 1.3.0 APK — November 6, 2026
+
+The APK is `releases/Still-1.3.0.apk` (Android code 5), including the earlier compact-screen and fast-check-in source updates. Download and update instructions are in the [Android release](https://github.com/eerihyppanen/Still/releases/tag/v1.3.0). The tested binary's checksum and signing identity are recorded below.
+
+### Pass 1 — wording
+
+Replaced motivational filler with direct labels/instructions across Today, Habits, History, forms, loading, About, notification content and the error page. Removed Today's greeting paragraph and repeated slogan. Browser creation, optional notes, check-in/completed expansion and Insights were exercised using disposable data.
+
+### Pass 2 — usability and correctness
+
+- Reproduced Today reporting “No habits yet” while all habits were archived. It now explains the archived state and links to Settings, while keeping New habit in the header.
+- Habits has a header add action for active lists; it is hidden during reorder. The empty list retains a full-size New habit action. Browser tests covered this action, restore, Morning/pill selection semantics and keyboard reorder with reload persistence at 320-pixel width.
+- Form choices expose checked/pressed states in the browser. Recap/progress accessibility wording handles one check-in/habit correctly. Archived or unscheduled zero-streak details no longer suggest starting today. About reads the app version from Expo config. Calendar filtering reuses the day's completion Set instead of scanning all records for every habit.
+
+### Pass 3 — Android runtime and fixes
+
+- Built and installed an APK over the existing 1.2.1/code 4 app on Pixel 7 / Android 16. A disposable habit and saved check-in survived the upgrade and a cold reopen. Check/undo, completed expansion, compact Settings, About version 1.3.0 and widget instructions worked.
+- Native time picker: changed the hour and cancelled, confirming 9:00 AM stayed selected; then entered and saved 10:30 AM. The app reconciled one real recurring Android alarm.
+- Denied the actual notification permission prompt; recovery stayed visible outside collapsed help and opened Android App info. Restored the emulator's original permission grant, enabled reminders, cancelled one pending test and delivered another. Reopening Reminder help recovered “received”; Android's notification record contained the new test body. Cleared it and disabled reminders: zero active Still RTC/ELAPSED alarms remained.
+- Keyboard clearance passed after fixing the verification script's outdated form-title check. The navigation script now distinguishes the New habit action from the identically named form title.
+- **Found and fixed a native crash during 150% text/display recreation.** The pre-fix APK threw “Attempted to navigate before mounting the Root Layout” from History's `router.setParams`. SDK 58 still routes that method through a global navigation reference. History now uses the current screen's typed Expo Router navigation object for both view/date updates. The expanded `-IncludeHistory` regression failed against the old APK, then passed view/date changes and form open/cancel through two recreation cycles on the rebuilt APK. Logs: `.expo/three-pass-history-red.log`, `.expo/three-pass-history-green.log`, `.expo/three-pass-router-crash.log`.
+- The same walkthrough exposed a clipped calendar status glyph. It now uses fixed icon-sized text metrics while dates and readable labels continue to scale. Inspected the rebuilt calendar at 150%; the full checkmark is visible and Settings navigation succeeds. The fresh crash buffer remained empty. Screenshot: [large-text Calendar](./verification/large-calendar-android.png).
+- Final browser regression confirmed date/view URL updates, selected-date retention, keyboard focus, and returning from Today's date link after switching views. Temporary browser habits were deleted and the viewport reset.
+- Used the new native Habits header action to create a second disposable habit and assign Morning. Dragged the original habit from first to second, asserted its new position, then confirmed that position after a force-stop/cold reopen. Screenshot: [Today on Android](./verification/plain-today-android.png).
+- Native archive recovery also passed: archiving the last remaining habit showed “All habits are archived”; Open Settings led to its archived row. Both disposable habits were then deleted through the app, and a cold reopen showed the empty state. Font size was restored to 1.0, notification permission to its original granted state, and app reminders to off. Test notifications were cleared; temporary preview servers/tabs and the emulator were closed.
+
+### Build and checks
+
+- `npm run check`: strict TypeScript, Expo lint and **90/90 tests** passed after the product fixes. Log: `.expo/three-pass-final-check.log`.
+- `npm run test:timezones`: **18/18 tests in each** of Helsinki, New York, Kolkata and Honolulu passed. Log: `.expo/three-pass-timezones.log`.
+- Final local Gradle release assembly passed. Generated native configuration was updated through Expo prebuild with `--no-clean`; no generated native source was edited by hand.
+- APK identity is `com.still.habits`, version 1.3.0/code 5, arm64-v8a and x86_64. Its certificate matches 1.2.1 (`fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c`). Packaged internet/network-state permissions are absent; Android backup remains disabled with the existing backup agent. No dependencies, schema or notification trigger/action logic changed.
+- Final APK: **64,529,743 bytes**, SHA-256 **`e4899dcd5a177b9e29891ae725c4b6d9725cf4ce27b57eee90702db734ced9a6`**.
+- Independent source review, including the native navigation fix, found no remaining actionable issues. Physical-phone installation, iOS runtime, manufacturer-specific delivery behavior and full TalkBack/VoiceOver testing remain unverified by this pass.
 
 ## Compact History and Settings — November 5, 2026
 

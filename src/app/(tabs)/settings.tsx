@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Constants from "expo-constants";
 import { Platform, Switch, View } from "react-native";
 import { Card, Heading, Screen, Txt } from "../../components/ui";
 import { useTheme, type ThemeMode } from "../../theme/ThemeProvider";
@@ -18,6 +19,7 @@ export default function Settings() {
   const { mode, colors } = useTheme();
   const app = useApp();
   const archived = app.habits.filter((h) => h.archived);
+  const version = Constants.expoConfig?.version;
   const [archivesExpanded, setArchivesExpanded] = useState(false);
   const [widgetExpanded, setWidgetExpanded] = useState(false);
   const [aboutExpanded, setAboutExpanded] = useState(false);
@@ -101,13 +103,14 @@ export default function Settings() {
       )}
       <Disclosure
         title="About Still"
-        summary="Version 1.2.1 · Stored on this device"
+        summary={
+          version
+            ? `Version ${version} · Stored on this device`
+            : "Stored on this device"
+        }
         expanded={aboutExpanded}
         onToggle={() => setAboutExpanded((value) => !value)}
       >
-        <Txt size={14} muted>
-          One small step, every day.
-        </Txt>
         <Txt size={14} muted>
           Works without internet. No account or cloud sync. The Android update
           excludes your app data from automatic backup and phone transfers.

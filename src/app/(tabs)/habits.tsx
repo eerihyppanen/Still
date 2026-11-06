@@ -7,6 +7,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import { useRouter } from "expo-router";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { Button, Empty, Heading, Screen, Txt } from "../../components/ui";
 import { HabitRow } from "../../components/HabitRow";
 import {
@@ -51,32 +52,57 @@ export default function Habits() {
       }}
     >
       <Heading
-        title="Your habits"
-        subtitle={`${active.length} ${active.length === 1 ? "routine" : "routines"} to grow with you.`}
+        title="Habits"
+        subtitle={`${active.length} active ${active.length === 1 ? "habit" : "habits"}`}
         action={
-          active.length > 1 && (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={
-                showOrdering ? "Finish reordering habits" : "Reorder habits"
-              }
-              accessibilityState={{
-                expanded: showOrdering,
-                disabled: app.busy || interacting,
-              }}
-              disabled={app.busy || interacting}
-              onPress={() => setReordering(!showOrdering)}
-              style={{
-                minHeight: 44,
-                padding: 10,
-                justifyContent: "center",
-                opacity: app.busy || interacting ? 0.5 : 1,
-              }}
+          active.length > 0 && (
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
             >
-              <Txt size={14} weight="600" style={{ color: colors.primary }}>
-                {showOrdering ? "Done" : "Reorder"}
-              </Txt>
-            </Pressable>
+              {active.length > 1 && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    showOrdering ? "Finish reordering habits" : "Reorder habits"
+                  }
+                  accessibilityState={{
+                    expanded: showOrdering,
+                    disabled: app.busy || interacting,
+                  }}
+                  disabled={app.busy || interacting}
+                  onPress={() => setReordering(!showOrdering)}
+                  style={{
+                    minHeight: 44,
+                    padding: 10,
+                    justifyContent: "center",
+                    opacity: app.busy || interacting ? 0.5 : 1,
+                  }}
+                >
+                  <Txt size={14} weight="600" style={{ color: colors.primary }}>
+                    {showOrdering ? "Done" : "Reorder"}
+                  </Txt>
+                </Pressable>
+              )}
+              {!showOrdering && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="New habit"
+                  disabled={app.busy || interacting}
+                  onPress={() => router.push("/habit-form")}
+                  style={({ pressed }) => ({
+                    width: 44,
+                    height: 44,
+                    borderRadius: 14,
+                    backgroundColor: colors.tint,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity: app.busy || interacting ? 0.5 : pressed ? 0.7 : 1,
+                  })}
+                >
+                  <Ionicons name="add" size={24} color={colors.primary} />
+                </Pressable>
+              )}
+            </View>
           )
         }
       />
@@ -103,16 +129,21 @@ export default function Habits() {
         )
       ) : (
         <Empty
-          title="Make a little room"
-          message="Build a routine around something that matters to you."
+          title="No active habits"
+          message={
+            app.habits.length
+              ? "Restore archived habits in Settings, or add a new habit."
+              : "Add a habit to start tracking it."
+          }
+          action={
+            <Button
+              title="New habit"
+              icon="add"
+              onPress={() => router.push("/habit-form")}
+            />
+          }
         />
       )}
-      <Button
-        title="New habit"
-        icon="add"
-        disabled={interacting}
-        onPress={() => router.push("/habit-form")}
-      />
     </Screen>
   );
 }

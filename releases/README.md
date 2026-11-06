@@ -1,4 +1,12 @@
-# Still 1.2.1 for Android
+# Still 1.3.0 for Android
+
+Sign in to GitHub on your phone and open the [Still 1.3.0 release](https://github.com/eerihyppanen/Still/releases/tag/v1.3.0). Download `Still-1.3.0.apk` from Assets, open it and choose **Update**. Keep the installed app so your history remains on the phone. This APK uses the same package and signing certificate as 1.2.1. A local copy is also in this folder.
+
+This build includes the compact Calendar/Insights and Settings layouts, faster check-ins, plainer wording, clearer archived-habit recovery, and a top-of-list New habit action. It works offline without a development server.
+
+The release includes the APK and `SHA256SUMS.txt`. Verification details are in `../VERIFICATION.md`.
+
+## Published Still 1.2.1
 
 Sign in to GitHub on your phone and open the [Still 1.2.1 release](https://github.com/eerihyppanen/Still/releases/tag/v1.2.1). Download `Still-1.2.1.apk` from Assets, open it, and choose Update or Install. **Keep the old app installed** so Android retains its local history. This build uses the same package and signing certificate as the previous test APKs.
 

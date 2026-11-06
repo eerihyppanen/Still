@@ -178,7 +178,7 @@ export function syncReminders(
         await reconcileReminders(driver, [], false);
         return {
           state: "off",
-          message: "Reminders are off. You can turn them on whenever you like.",
+          message: "Reminders are off.",
         };
       }
       if (
@@ -240,7 +240,7 @@ export function sendTestNotification(): Promise<void> {
           identifier: id,
           content: {
             title: "Still test reminder",
-            body: "Your gentle reminders are working.",
+            body: "Test notification received.",
             sound: false,
             data: { kind: "reminder-test" },
           },

@@ -2,7 +2,9 @@
 
 A quiet, offline-only habit tracker, built with Expo SDK 58, React Native 0.88, strict TypeScript, Expo Router, and Expo SQLite. The Android release keeps your data on the phone, excludes it from automatic backup/transfer, and has no internet permission. There are no accounts, analytics, or cloud services in the app.
 
-## Android 1.1 update
+## Android 1.3.0
+
+[Download Still 1.3.0 from the Android release](https://github.com/eerihyppanen/Still/releases/tag/v1.3.0). Sign in to GitHub on your phone to access the private repository's APK. This build includes clearer wording, usability fixes, compact History/Settings screens, faster check-ins, and the Android History recreation fix. The local copy is `releases/Still-1.3.0.apk`. See [the APK notes](./releases/README.md) and [verification record](./VERIFICATION.md).
 
 Install the new APK over the existing Still installation. **Do not uninstall first:** uninstalling removes local history. Keep the same signing key/package for subsequent builds. Once installed, no computer, Wi-Fi, Expo Go, or development server is needed.
 
@@ -70,7 +72,7 @@ For an installed Expo Go that supports SDK 58, `npx expo start --go` is also an 
 
 ## What you can do
 
-- Create routines by choosing a name and schedule first. Expand Appearance for emoji/color, Your reason for an optional description, or Reminder for a time. Appearance includes 💊 and an input for typing/pasting your own emoji.
+- Create habits by choosing a name and schedule first. Expand Appearance for emoji/color, Notes for optional details, or Reminder for a time. Appearance includes 💊 and an input for typing/pasting your own emoji.
 - Use the Edit action at the top of habit details. Create/Save stays at the bottom of the form while you scroll, including above the phone keyboard. Closing an optional section keeps its values; invalid fields reopen their section on save.
 - Check and uncheck today's scheduled habits. View individual scheduled-day streaks and daily progress.
 - Optionally organize Today into Morning, Afternoon, Evening, and Anytime sections. Zero streaks say “Start today”; future week-strip dates are disabled.
@@ -123,7 +125,7 @@ src/notifications/   Reminder planning, reconciliation, and Expo adapter
 tests/               Domain tests and real SQLite integration tests
 ```
 
-The UI depends on the application provider; SQL stays in the repository. The pure domain functions do not depend on React Native or Expo. A future sync layer can work with stable habit IDs, local date keys, schedule history, and update timestamps without changing screen components. Conflict resolution and deletion tombstones should be added when sync is implemented.
+The UI depends on the application provider; SQL stays in the repository. The pure domain functions do not depend on React Native or Expo. All habits, settings and history are stored locally.
 
 ## Checks
 

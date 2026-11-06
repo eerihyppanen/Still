@@ -39,7 +39,7 @@ export function NotificationSettings() {
       <Card style={{ padding: 16, gap: 8 }}>
         <View style={s.row}>
           <View style={{ flex: 1, gap: 4 }}>
-            <Txt weight="600">Gentle reminders</Txt>
+            <Txt weight="600">Reminders</Txt>
           </View>
           <Switch
             accessibilityLabel="Enable habit notifications"

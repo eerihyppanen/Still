@@ -25,7 +25,7 @@ function Navigation() {
           <Stack.Screen name="habit/[id]" options={{ title: "Your habit" }} />
           <Stack.Screen
             name="habit-form"
-            options={{ presentation: "modal", title: "Make a little room" }}
+            options={{ presentation: "modal", title: "New habit" }}
           />
         </Stack>
       </AppGate>

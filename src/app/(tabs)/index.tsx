@@ -35,9 +35,6 @@ export default function Today() {
   const completed = scheduled.filter((h) => done.has(h.id)).length;
   const completedExpanded = expandedDate === today;
   const hasActiveHabits = habits.some((habit) => !habit.archived);
-  const hour = new Date().getHours();
-  const greeting =
-    hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   function renderHabit(habit: (typeof scheduled)[number]) {
     return (
       <HabitRow
@@ -78,7 +75,7 @@ export default function Today() {
               year: "numeric",
             })}
           </Txt>
-          {hasActiveHabits && (
+          {habits.length > 0 && (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="New habit"
@@ -100,10 +97,7 @@ export default function Today() {
       </View>
       <View style={{ gap: 4 }}>
         <Txt size={26} weight="700" style={{ letterSpacing: -0.5 }}>
-          {greeting}.
-        </Txt>
-        <Txt size={14} muted>
-          A little care for the person you’re becoming.
+          Today
         </Txt>
       </View>
       <View style={[s.row, { gap: 4 }]}>
@@ -175,13 +169,11 @@ export default function Today() {
             <View style={{ flex: 1, gap: 6 }}>
               <Txt size={18} weight="600">
                 {completed === scheduled.length && scheduled.length
-                  ? "You showed up."
-                  : "Your daily rhythm"}
+                  ? "All done today"
+                  : "Today’s progress"}
               </Txt>
               <Txt size={14} muted>
-                {scheduled.length
-                  ? `${completed} of ${scheduled.length} ${scheduled.length === 1 ? "habit" : "habits"} complete`
-                  : "A fresh page, just for you."}
+                {`${completed} of ${scheduled.length} ${scheduled.length === 1 ? "habit" : "habits"} complete`}
               </Txt>
             </View>
             <ProgressRing
@@ -206,21 +198,34 @@ export default function Today() {
       )}
       {!hasActiveHabits ? (
         <Empty
-          title="Start small. Make it yours."
-          message="A glass of water. A page of a book. Choose one thing you’d like to come back to."
+          title={habits.length ? "All habits are archived" : "No habits yet"}
+          message={
+            habits.length
+              ? "Your history is saved. Restore a habit from Settings."
+              : "Add a habit and choose which days to track it."
+          }
           action={
             <Button
-              title="Create your first habit"
-              icon="add"
-              onPress={() => router.push("/habit-form")}
+              title={habits.length ? "Open Settings" : "New habit"}
+              icon={habits.length ? "settings-outline" : "add"}
+              onPress={() =>
+                router.push(habits.length ? "/(tabs)/settings" : "/habit-form")
+              }
             />
           }
         />
       ) : !scheduled.length ? (
         <Empty
           icon="partly-sunny-outline"
-          title="A little breathing room"
-          message="None of your habits are scheduled today. Your routines will be here when it’s time."
+          title="Nothing scheduled today"
+          message="You can view or change your schedule in Habits."
+          action={
+            <Button
+              title="View habits"
+              variant="secondary"
+              onPress={() => router.push("/(tabs)/habits")}
+            />
+          }
         />
       ) : (
         <View style={{ gap: 12 }}>
@@ -265,9 +270,6 @@ export default function Today() {
           )}
         </View>
       )}
-      <Txt size={13} muted style={{ textAlign: "center", paddingVertical: 4 }}>
-        Consistency begins with coming back.
-      </Txt>
     </Screen>
   );
 }

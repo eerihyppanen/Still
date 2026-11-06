@@ -37,7 +37,7 @@ export function buildReminderPlan(
     return days.map((weekday) => {
       const id = `still:${habit.id}:${weekday ?? "daily"}`;
       const title = `${habit.emoji} ${habit.name}`;
-      const body = "A little time for something that matters to you.";
+      const body = "Check in when you’re done.";
       return {
         id,
         habitId: habit.id,

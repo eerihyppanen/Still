@@ -3,7 +3,7 @@ import { Pressable, View } from "react-native";
 import { Stack, useRouter, useLocalSearchParams } from "expo-router";
 import { Button, Card, Empty, Screen, Txt } from "../../components/ui";
 import { useApp } from "../../state/AppProvider";
-import { habitStats } from "../../domain/habits";
+import { habitStats, isScheduled } from "../../domain/habits";
 import { streakLabel } from "../../domain/labels";
 import { TIME_GROUPS } from "../../domain/groups";
 import { scheduleLabel } from "../../components/HabitRow";
@@ -89,7 +89,10 @@ export default function HabitDetail() {
       </View>
       <Card>
         <Txt size={24} weight="600">
-          {streakLabel(stats.currentStreak)}
+          {stats.currentStreak === 0 &&
+          (habit.archived || !isScheduled(habit, app.today))
+            ? "No streak yet"
+            : streakLabel(stats.currentStreak)}
         </Txt>
         <Txt muted>
           {stats.totalCompleted}{" "}
@@ -123,8 +126,8 @@ export default function HabitDetail() {
           confirm === "delete"
             ? "Delete this habit permanently?"
             : habit.archived
-              ? "Bring this habit back?"
-              : "Take a break from this habit?"
+              ? "Restore this habit?"
+              : "Archive this habit?"
         }
         message={
           confirm === "delete"

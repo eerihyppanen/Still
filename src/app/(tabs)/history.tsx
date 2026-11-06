@@ -1,4 +1,5 @@
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useNavigation } from "expo-router";
+import type { NavigationProp } from "expo-router/react-navigation";
 import { View } from "react-native";
 import { Button, Empty, Heading, Screen, Section } from "../../components/ui";
 import { CalendarHistory } from "../../components/CalendarHistory";
@@ -7,8 +8,12 @@ import { WeeklyRecap } from "../../components/WeeklyRecap";
 import { useApp } from "../../state/AppProvider";
 import { parseDate } from "../../domain/dates";
 import { ChoiceControl } from "../../components/ChoiceControl";
+type HistoryParams = { date?: string; view?: "calendar" | "insights" };
 export default function History() {
   const router = useRouter();
+  // Keep param updates bound to this mounted screen after Android recreation.
+  const navigation =
+    useNavigation<NavigationProp<{ history: HistoryParams }, "history">>();
   const { habits, completions, today } = useApp();
   const { date, view } = useLocalSearchParams<{
     date?: string;
@@ -30,11 +35,11 @@ export default function History() {
       {!habits.length ? (
         <Empty
           icon="calendar-outline"
-          title="Your story starts today"
-          message="Create a habit and your check-ins will become a picture of your progress."
+          title="No history yet"
+          message="Add a habit, then check it off to see your progress here."
           action={
             <Button
-              title="Create a habit"
+              title="New habit"
               onPress={() => router.push("/habit-form")}
             />
           }
@@ -49,7 +54,7 @@ export default function History() {
               ] as const
             }
             value={activeView}
-            onChange={(value) => router.setParams({ view: value })}
+            onChange={(value) => navigation.setParams({ view: value })}
           />
           <View
             style={{ display: activeView === "calendar" ? "flex" : "none" }}
@@ -59,14 +64,14 @@ export default function History() {
               habits={habits}
               records={completions}
               today={today}
-              onDateChange={(date) => router.setParams({ date })}
+              onDateChange={(date) => navigation.setParams({ date })}
             />
           </View>
           {activeView === "insights" && (
             <>
               <Section title="Weekly recap" />
               <WeeklyRecap />
-              <Section title="The bigger picture" />
+              <Section title="Statistics" />
               <Statistics />
             </>
           )}

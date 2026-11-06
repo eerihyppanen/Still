@@ -23,13 +23,13 @@ export function WeeklyRecap() {
       </Txt>
       <Txt size={22} weight="700">
         {total.scheduled
-          ? `${total.completed} of ${total.scheduled} planned check-ins complete`
+          ? `${total.completed} of ${total.scheduled} planned ${total.scheduled === 1 ? "check-in" : "check-ins"} complete`
           : "No planned check-ins yet this week"}
       </Txt>
       {total.scheduled > 0 && (
         <>
           <View style={{ gap: 4 }}>
-            <Txt weight="600">Most consistent routine</Txt>
+            <Txt weight="600">Most consistent habit</Txt>
             <Txt muted>
               {mostConsistent
                 ? `${mostConsistent.habit.name} · ${mostConsistent.completed} of ${mostConsistent.scheduled} complete`
@@ -37,7 +37,7 @@ export function WeeklyRecap() {
             </Txt>
           </View>
           <View style={{ gap: 4 }}>
-            <Txt weight="600">Hardest days</Txt>
+            <Txt weight="600">Lowest completion</Txt>
             {hardestDays.length ? (
               hardestDays.map((day) => (
                 <Txt key={day.date} muted>

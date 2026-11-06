@@ -73,7 +73,7 @@ export function handleReminderResponse(response: unknown): Promise<boolean> {
             identifier: plan.id,
             content: {
               title: `${plan.habit.emoji} ${plan.habit.name}`,
-              body: "A little time for your habit, when you’re ready.",
+              body: "Check in when you’re done.",
               sound: false,
               categoryIdentifier: REMINDER_CATEGORY,
               data: {

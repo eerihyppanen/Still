@@ -17,7 +17,7 @@ export function ProgressRing({
   return (
     <View
       accessible
-      accessibilityLabel={`${completed} of ${total} habits completed`}
+      accessibilityLabel={`${completed} of ${total} ${total === 1 ? "habit" : "habits"} completed`}
       style={{
         width: size,
         height: size,

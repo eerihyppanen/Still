@@ -180,7 +180,7 @@ export default function HabitForm() {
     >
       <Stack.Screen
         options={{
-          title: id ? "Edit your habit" : "A new beginning",
+          title: id ? "Edit habit" : "New habit",
           headerRight: () => (
             <Pressable
               accessibilityRole="button"
@@ -226,7 +226,7 @@ export default function HabitForm() {
         >
           <Card>
             <View style={[s.row, { flexWrap: "wrap", gap: 8 }]}>
-              <Txt weight="600">Make time for it</Txt>
+              <Txt weight="600">Schedule</Txt>
               <Pressable
                 accessibilityRole="button"
                 onPress={() => setWeekdays([0, 1, 2, 3, 4, 5, 6])}
@@ -279,7 +279,7 @@ export default function HabitForm() {
               ))}
             </View>
             <Txt size={13} muted>
-              Choose the days that fit your life.
+              Select the days to track this habit.
               {id ? " Changes apply from today." : ""}
             </Txt>
             <FieldError message={errors.weekdays} />
@@ -297,6 +297,7 @@ export default function HabitForm() {
                 accessibilityRole="radio"
                 accessibilityLabel={`${group.title} group`}
                 accessibilityState={{ checked: timeOfDay === group.key }}
+                aria-checked={timeOfDay === group.key}
                 onPress={() => setTimeOfDay(group.key)}
                 style={{
                   minHeight: 44,
@@ -367,6 +368,9 @@ export default function HabitForm() {
                   accessibilityRole="button"
                   accessibilityLabel={`Icon ${value}`}
                   accessibilityState={{ selected: emoji.trim() === value }}
+                  {...(Platform.OS === "web"
+                    ? { "aria-pressed": emoji.trim() === value }
+                    : {})}
                   onPress={() => setEmoji(value)}
                   style={[
                     styles.choice,
@@ -412,7 +416,7 @@ export default function HabitForm() {
             </Txt>
           </View>
           <View style={{ gap: 10 }}>
-            <Txt weight="600">A color that feels like you</Txt>
+            <Txt weight="600">Color</Txt>
             <View style={styles.wrap}>
               {HABIT_COLORS.map((value, i) => (
                 <Pressable
@@ -422,6 +426,9 @@ export default function HabitForm() {
                     ["Lavender", "Teal", "Rose", "Ochre", "Blue", "Olive"][i]
                   }
                   accessibilityState={{ selected: color === value }}
+                  {...(Platform.OS === "web"
+                    ? { "aria-pressed": color === value }
+                    : {})}
                   onPress={() => setColor(value)}
                   style={[
                     styles.choice,
@@ -453,8 +460,8 @@ export default function HabitForm() {
           </View>
         </Disclosure>
         <Disclosure
-          title="Your reason"
-          summary={description.trim() || "Optional: why this matters to you"}
+          title="Notes"
+          summary={description.trim() || "Optional details"}
           expanded={expanded.reason}
           disabled={app.busy}
           onToggle={() =>
@@ -466,7 +473,7 @@ export default function HabitForm() {
         >
           <View style={{ gap: 9 }}>
             <Txt weight="600">
-              Your reason{" "}
+              Notes{" "}
               <Txt muted size={13}>
                 (optional)
               </Txt>
@@ -475,7 +482,7 @@ export default function HabitForm() {
               ref={descriptionRef}
               accessibilityLabel="Description"
               accessibilityHint={errors.description}
-              placeholder="A little reminder of why this matters…"
+              placeholder="Add a note about this habit"
               placeholderTextColor={colors.muted}
               value={description}
               onChangeText={setDescription}
@@ -502,7 +509,7 @@ export default function HabitForm() {
             <View style={{ gap: 12 }}>
               <View style={s.row}>
                 <View style={{ flex: 1, gap: 4 }}>
-                  <Txt weight="600">A gentle reminder</Txt>
+                  <Txt weight="600">Reminder</Txt>
                   <Txt size={13} muted>
                     Optional, in your local time.
                   </Txt>

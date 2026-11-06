@@ -42,13 +42,11 @@ export function CalendarHistory({
     habits
       .reduce((min, h) => (h.createdDate < min ? h.createdDate : min), today)
       .slice(0, 7) + "-01";
-  const selectedHabits = habits.filter(
-    (h) =>
-      isScheduled(h, selected) ||
-      records.some((r) => r.habitId === h.id && r.date === selected),
-  );
   const done = new Set(
     records.filter((r) => r.date === selected).map((r) => r.habitId),
+  );
+  const selectedHabits = habits.filter(
+    (h) => isScheduled(h, selected) || done.has(h.id),
   );
   function selectDate(date: DateKey) {
     setLocalDate(date);
@@ -153,8 +151,12 @@ export function CalendarHistory({
                 </Txt>
                 <Txt
                   size={9}
+                  allowFontScaling={false}
                   style={{
                     height: 11,
+                    lineHeight: 11,
+                    includeFontPadding: false,
+                    textAlignVertical: "center",
                     color: full ? colors.success : colors.primary,
                   }}
                 >

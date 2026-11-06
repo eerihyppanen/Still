@@ -26,7 +26,7 @@ export function AppGate({ children }: React.PropsWithChildren) {
             accessibilityLiveRegion="polite"
             style={{ textAlign: "center" }}
           >
-            Opening your space…
+            Loading Still…
           </Txt>
         </View>
       </SafeAreaView>
@@ -35,8 +35,8 @@ export function AppGate({ children }: React.PropsWithChildren) {
     return (
       <Screen>
         <Empty
-          icon="cloud-offline-outline"
-          title="Your habits couldn’t open"
+          icon="alert-circle-outline"
+          title="Couldn’t load your habits"
           message={error}
           action={<Button title="Try again" onPress={() => void reload()} />}
         />

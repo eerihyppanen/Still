@@ -18,7 +18,7 @@ try {
 }
 
 $taskNodes = @($taskUi.SelectNodes('//node'))
-if (!($taskNodes | Where-Object { $_.text -in 'A new beginning', 'Edit your habit' })) {
+if (!($taskNodes | Where-Object { $_.text -in 'New habit', 'Edit habit', 'A new beginning', 'Edit your habit' })) {
     throw 'Open the Still habit form before running this check.'
 }
 $taskDisplays = (& $Adb -s $Serial shell dumpsys window displays) -join "`n"

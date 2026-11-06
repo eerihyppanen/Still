@@ -113,8 +113,8 @@ export function TestReminder({
             : status === "delivered"
               ? "Your test reminder was received."
               : enabled
-                ? "Try a quiet test notification before relying on a habit reminder."
-                : "Enable gentle reminders to send a test notification.")}
+                ? "Send a test to check notification delivery."
+                : "Enable reminders to send a test notification.")}
       </Txt>
     </View>
   );

@@ -1,10 +1,13 @@
 param(
     [string]$Serial = 'emulator-5554',
-    [string]$Adb = 'adb'
+    [string]$Adb = 'adb',
+    [switch]$IncludeHistory
 )
 
 # This check temporarily changes an emulator's display settings and restores them.
 # It opens and cancels an empty habit form; no habit data is created or deleted.
+# IncludeHistory also switches Calendar/Insights while display settings are changed;
+# this requires an existing habit so History is not in its empty state.
 $ErrorActionPreference = 'Stop'
 if ($Serial -notlike 'emulator-*') { throw 'Run this display recreation check on an emulator.' }
 $taskDeviceFile = "/sdcard/still-navigation-qa-$([Guid]::NewGuid().ToString('N')).xml"
@@ -24,8 +27,16 @@ function Find-TaskNode([string]$Label) {
     do {
         $taskUi = Get-TaskUi
         $taskNode = $taskUi.SelectNodes('//node') | Where-Object {
-            $_.'content-desc' -eq $Label -or $_.text -eq $Label -or
-            ($Label -eq 'New habit' -and $_.'content-desc' -like '*Create your first habit*')
+            if ($Label -eq 'New habit') {
+                # The form's title is also "New habit"; only match the add action.
+                $_.clickable -eq 'true' -and (
+                    $_.'content-desc' -eq $Label -or $_.text -eq $Label -or
+                    $_.'content-desc' -like '*, New habit' -or
+                    $_.'content-desc' -like '*Create your first habit*'
+                )
+            } else {
+                $_.'content-desc' -eq $Label -or $_.text -eq $Label
+            }
         } | Select-Object -First 1
         if ($taskNode) { return $taskNode }
         # Large text can place the empty-state create action below the viewport.
@@ -73,6 +84,24 @@ try {
         Invoke-TaskAdb shell wm size 840x1860 | Out-Null
         Invoke-TaskAdb shell settings put system font_scale 1.5 | Out-Null
         $null = Find-TaskNode 'New habit'
+        if ($IncludeHistory) {
+            Tap-TaskNode (Find-TaskNode 'History')
+            Tap-TaskNode (Find-TaskNode 'Insights')
+            $null = Find-TaskNode 'Weekly recap'
+            Tap-TaskNode (Find-TaskNode 'Calendar')
+            $null = Find-TaskNode 'Previous month'
+            $taskCalendarUi = Get-TaskUi
+            $taskCalendarDay = $taskCalendarUi.SelectNodes('//node') | Where-Object {
+                $_.clickable -eq 'true' -and $_.enabled -eq 'true' -and
+                $_.'content-desc' -match ', \d+ of \d+ complete$'
+            } | Select-Object -First 1
+            if (!$taskCalendarDay) { throw 'No selectable calendar date appeared.' }
+            Tap-TaskNode $taskCalendarDay
+            $null = Find-TaskNode 'Previous month'
+            Tap-TaskNode (Find-TaskNode 'Today')
+            $null = Find-TaskNode 'New habit'
+            Write-Output "PASS: History view/date updates after display recreation cycle $taskCycle."
+        }
         Restore-TaskDisplay
         Tap-TaskNode (Find-TaskNode 'New habit')
         $null = Find-TaskNode 'Habit name'

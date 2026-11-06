@@ -1,5 +1,15 @@
 # Implementation phases
 
+## Three-pass review and local APK — November 6, 2026
+
+The first pass replaced motivational filler with direct labels and instructions across Today, Habits, History, forms, loading, notifications and error handling. Today no longer includes a greeting paragraph or repeated slogan. Forms use New habit, Schedule, Notes and Color.
+
+The second pass corrected the all-archived empty state, added a Settings recovery action, moved New habit to the Habits header for active lists, and improved browser selection semantics. Calendar day filtering reuses its completion Set. Singular recap/accessibility labels and zero-streak labels for archived/unscheduled habits are corrected. About reads the Expo app version instead of a hardcoded label.
+
+The third pass built and exercised a standalone Android update over 1.2.1. It found a History crash after display/text recreation: SDK 58's router.setParams still uses a shared navigation reference. History now updates parameters through the mounted screen's typed Expo Router navigation object. Fixed calendar status-glyph clipping at large text sizes. The native regression covers both History views and date changes across recreation. Keyboard verification recognizes the new form titles, and navigation verification distinguishes the New habit action from the identically named form title. See VERIFICATION.md for runtime evidence and remaining limitations.
+
+Version 1.3.0 / Android code 5 retains the same package, signing key, offline manifest policy, schema and dependencies. The APK is available through the [v1.3.0 release](https://github.com/eerihyppanen/Still/releases/tag/v1.3.0) for Android testing.
+
 ## Compact History and Settings — November 5, 2026
 
 History now separates Calendar and Insights. The calendar retains comfortable date buttons and uses shorter habit rows with separate detail and check-in actions. Its selected date is controlled by the History route, while the habit-detail calendar keeps local selection. This also fixes repeated Today date links leaving an older browsed date selected, without remounting the calendar or losing keyboard focus.
