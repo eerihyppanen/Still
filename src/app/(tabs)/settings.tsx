@@ -21,7 +21,6 @@ export default function Settings() {
   const archived = app.habits.filter((h) => h.archived);
   const version = Constants.expoConfig?.version;
   const [archivesExpanded, setArchivesExpanded] = useState(false);
-  const [widgetExpanded, setWidgetExpanded] = useState(false);
   const [aboutExpanded, setAboutExpanded] = useState(false);
   return (
     <Screen contentContainerStyle={{ gap: 14 }}>
@@ -87,20 +86,6 @@ export default function Settings() {
           </Txt>
         )}
       </Disclosure>
-      {Platform.OS === "android" && (
-        <Disclosure
-          title="Home-screen widget"
-          summary="See Today on your home screen"
-          expanded={widgetExpanded}
-          onToggle={() => setWidgetExpanded((value) => !value)}
-        >
-          <Txt size={14} muted>
-            Touch and hold your home screen, choose Widgets, then add Still —
-            Today. It shows the saved date and progress. Open Still from the
-            widget to refresh or check in.
-          </Txt>
-        </Disclosure>
-      )}
       <Disclosure
         title="About Still"
         summary={

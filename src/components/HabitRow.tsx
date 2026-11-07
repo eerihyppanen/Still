@@ -9,7 +9,10 @@ import { WEEKDAYS } from "../domain/models";
 import { streakLabel } from "../domain/labels";
 import { useReducedMotion } from "../theme/useReducedMotion";
 export function scheduleLabel(habit: Habit) {
-  const days = habit.schedules[habit.schedules.length - 1]?.weekdays ?? [];
+  const schedule = habit.schedules.at(-1);
+  const target = schedule?.weeklyTarget;
+  if (target !== undefined) return `${target} ${target === 1 ? "day" : "days"} per week`;
+  const days = schedule?.weekdays ?? [];
   return days.length === 7
     ? "Every day"
     : WEEKDAYS.filter((day) => days.includes(day.value))

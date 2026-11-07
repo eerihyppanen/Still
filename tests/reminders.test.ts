@@ -43,6 +43,22 @@ function driver() {
     },
   };
 }
+test("pausing cancels recurring reminders and schedules the first weekday back", async () => {
+  const { os, scheduled } = driver();
+  const today = "2026-10-27";
+  await reconcileReminders(os, buildReminderPlan([habit], today, "UTC"), true);
+  const paused = { ...habit, periods: [
+    { startDate: habit.createdDate, endDate: today },
+    { startDate: "2026-10-30", endDate: null },
+  ] };
+  const plan = buildReminderPlan([paused], today, "UTC");
+  assert.equal(plan.length, 1);
+  assert.equal(plan[0]?.occurrenceDate, "2026-11-02");
+  await reconcileReminders(os, plan, true);
+  assert.deepEqual([...scheduled.keys()], ["still:h:resume"]);
+  await reconcileReminders(os, buildReminderPlan([paused], "2026-11-02", "UTC"), true);
+  assert.deepEqual([...scheduled.keys()], ["still:h:2", "still:h:4"]);
+});
 test("weekday plans map Sunday to 1, preserve local time, and daily habits use one slot", () => {
   const plans = buildReminderPlan(
     [

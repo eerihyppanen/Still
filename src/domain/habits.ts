@@ -1,21 +1,34 @@
 import type { Completion, DateKey, Habit, HabitDraft, Weekday } from "./models";
-import { datesBetween, parseDate } from "./dates";
+import { datesBetween, parseDate, weekDates } from "./dates";
 import { isHabitEmoji } from "./emoji";
 import { isTimeOfDay } from "./groups";
 
+export function scheduleOn(habit: Habit, date: DateKey) {
+  return habit.schedules.findLast((schedule) => schedule.effectiveDate <= date);
+}
+export function pendingResumeDate(habit: Habit, today: DateKey) {
+  if (habit.archived || habit.createdDate > today) return;
+  return habit.periods.find(
+    (period) => period.endDate === null && period.startDate > today,
+  )?.startDate;
+}
+function isActiveOn(habit: Habit, date: DateKey): boolean {
+  return habit.periods.some(
+    (period) =>
+      period.startDate <= date && (!period.endDate || period.endDate > date),
+  );
+}
+export function pausedUntil(habit: Habit, today: DateKey) {
+  const resumeDate = pendingResumeDate(habit, today);
+  return resumeDate && !isActiveOn(habit, today) ? resumeDate : undefined;
+}
 export function isScheduled(habit: Habit, date: DateKey): boolean {
-  if (
-    date < habit.createdDate ||
-    !habit.periods.some(
-      (period) =>
-        period.startDate <= date && (!period.endDate || period.endDate > date),
-    )
-  )
-    return false;
-  const schedule = [...habit.schedules]
-    .reverse()
-    .find((value) => value.effectiveDate <= date);
-  return !!schedule?.weekdays.includes(parseDate(date).getDay() as Weekday);
+  if (date < habit.createdDate || !isActiveOn(habit, date)) return false;
+  const schedule = scheduleOn(habit, date);
+  return !!schedule && (
+    schedule.weeklyTarget !== undefined ||
+    schedule.weekdays.includes(parseDate(date).getDay() as Weekday)
+  );
 }
 export function completionSet(
   records: Completion[],
@@ -35,7 +48,9 @@ export function habitStats(
 ) {
   const completed = completionSet(records, habit.id, today);
   const eligible = datesBetween(habit.createdDate, today).filter(
-    (date) => isScheduled(habit, date) || completed.has(date),
+    (date) =>
+      scheduleOn(habit, date)?.weeklyTarget === undefined &&
+      (isScheduled(habit, date) || completed.has(date)),
   );
   let run = 0,
     longestStreak = 0,
@@ -50,7 +65,7 @@ export function habitStats(
   return {
     currentStreak: run,
     longestStreak,
-    totalCompleted,
+    totalCompleted: completed.size,
     completionRate: eligible.length
       ? Math.round((totalCompleted / eligible.length) * 100)
       : 0,
@@ -68,7 +83,10 @@ export function summarize(
     const done = completionSet(records, habit.id, today);
     for (const date of dates) {
       if (date > today) continue;
-      if (isScheduled(habit, date) || done.has(date)) {
+      if (
+        scheduleOn(habit, date)?.weeklyTarget === undefined &&
+        (isScheduled(habit, date) || done.has(date))
+      ) {
         scheduled++;
         if (done.has(date)) completed++;
       }
@@ -80,6 +98,25 @@ export function summarize(
     rate: scheduled ? Math.round((completed / scheduled) * 100) : 0,
   };
 }
+export function weeklyGoalProgress(
+  habit: Habit,
+  records: Completion[],
+  today: DateKey,
+) {
+  if (habit.createdDate > today) return { completed: 0, target: 0 };
+  const done = completionSet(records, habit.id, today);
+  let eligible = 0;
+  let completed = 0;
+  let target = 0;
+  for (const day of weekDates(today)) {
+    const goal = scheduleOn(habit, day)?.weeklyTarget;
+    if (goal === undefined || !(done.has(day) || isScheduled(habit, day))) continue;
+    eligible++;
+    if (day <= today || target === 0) target = goal;
+    if (done.has(day)) completed++;
+  }
+  return { completed, target: Math.min(target, eligible) };
+}
 export type HabitDraftErrors = Partial<Record<keyof HabitDraft, string>>;
 export function getDraftErrors(draft: HabitDraft): HabitDraftErrors {
   const errors: HabitDraftErrors = {};
@@ -89,10 +126,16 @@ export function getDraftErrors(draft: HabitDraft): HabitDraftErrors {
   if (!name || name.length > 80)
     errors.name = "Give your habit a name of 1–80 characters.";
   if (
-    !draft.weekdays.length ||
-    draft.weekdays.some((day) => !Number.isInteger(day) || day < 0 || day > 6)
+    draft.weeklyTarget === undefined &&
+    (!draft.weekdays.length ||
+      draft.weekdays.some((day) => !Number.isInteger(day) || day < 0 || day > 6))
   )
     errors.weekdays = "Choose at least one day.";
+  if (
+    draft.weeklyTarget !== undefined &&
+    (!Number.isInteger(draft.weeklyTarget) || draft.weeklyTarget < 1 || draft.weeklyTarget > 7)
+  )
+    errors.weeklyTarget = "Choose a goal between 1 and 7 days.";
   if (
     draft.reminderTime !== null &&
     !/^([01]\d|2[0-3]):[0-5]\d$/.test(draft.reminderTime)
@@ -112,6 +155,8 @@ export function validateDraft(draft: HabitDraft): HabitDraft {
     name: draft.name.trim(),
     emoji: draft.emoji.trim(),
     description: draft.description.trim(),
-    weekdays: [...new Set(draft.weekdays)].sort((a, b) => a - b),
+    weekdays: draft.weeklyTarget === undefined
+      ? [...new Set(draft.weekdays)].sort((a, b) => a - b)
+      : [],
   };
 }

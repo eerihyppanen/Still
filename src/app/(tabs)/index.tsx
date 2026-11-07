@@ -17,7 +17,8 @@ import { Disclosure } from "../../components/Disclosure";
 import { StillMark } from "../../components/StillMark";
 import { useApp } from "../../state/AppProvider";
 import { useTheme } from "../../theme/ThemeProvider";
-import { habitStats } from "../../domain/habits";
+import { habitStats, scheduleOn, weeklyGoalProgress } from "../../domain/habits";
+import { weeklyGoalLabel } from "../../domain/labels";
 import { todayHabits } from "../../domain/history";
 import { groupTodayHabits } from "../../domain/groups";
 import { formatDate, weekDates, parseDate } from "../../domain/dates";
@@ -28,20 +29,33 @@ export default function Today() {
   const { width, fontScale } = useWindowDimensions();
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
   const scheduled = todayHabits(habits, completions, today);
-  const groups = groupTodayHabits(scheduled);
+  const daily = scheduled.filter(
+    (habit) => scheduleOn(habit, today)?.weeklyTarget === undefined,
+  );
+  const weekly = groupTodayHabits(scheduled.filter(
+    (habit) => scheduleOn(habit, today)?.weeklyTarget !== undefined,
+  )).flatMap((group) => group.habits);
+  const groups = groupTodayHabits(daily);
   const done = new Set(
     completions.filter((c) => c.date === today).map((c) => c.habitId),
   );
   const completed = scheduled.filter((h) => done.has(h.id)).length;
+  const dailyCompleted = daily.filter((habit) => done.has(habit.id)).length;
+  const weeklyUnfinished = weekly.filter((habit) => !done.has(habit.id));
   const completedExpanded = expandedDate === today;
   const hasActiveHabits = habits.some((habit) => !habit.archived);
   function renderHabit(habit: (typeof scheduled)[number]) {
+    const weekly = scheduleOn(habit, today)?.weeklyTarget !== undefined;
+    const progress = weekly
+      ? weeklyGoalProgress(habit, completions, today)
+      : undefined;
     return (
       <HabitRow
         key={habit.id}
         habit={habit}
         completed={done.has(habit.id)}
-        streak={habitStats(habit, completions, today).currentStreak}
+        streak={weekly ? undefined : habitStats(habit, completions, today).currentStreak}
+        subtitle={progress && weeklyGoalLabel(progress.completed, progress.target)}
         disabled={busy}
         onToggle={() =>
           void setCompletion(habit.id, today, !done.has(habit.id)).catch(
@@ -149,7 +163,7 @@ export default function Today() {
           </Pressable>
         ))}
       </View>
-      {scheduled.length > 0 && (
+      {daily.length > 0 && (
         <Card
           style={{
             backgroundColor: colors.tint,
@@ -168,17 +182,17 @@ export default function Today() {
           >
             <View style={{ flex: 1, gap: 6 }}>
               <Txt size={18} weight="600">
-                {completed === scheduled.length && scheduled.length
-                  ? "All done today"
+                {dailyCompleted === daily.length
+                  ? "All planned habits done"
                   : "Today’s progress"}
               </Txt>
               <Txt size={14} muted>
-                {`${completed} of ${scheduled.length} ${scheduled.length === 1 ? "habit" : "habits"} complete`}
+                {`${dailyCompleted} of ${daily.length} ${daily.length === 1 ? "habit" : "habits"} complete`}
               </Txt>
             </View>
             <ProgressRing
-              completed={completed}
-              total={scheduled.length}
+              completed={dailyCompleted}
+              total={daily.length}
               size={
                 fontScale > 1.35
                   ? Math.min(width - 76, Math.round(100 * fontScale))
@@ -190,19 +204,20 @@ export default function Today() {
           </View>
         </Card>
       )}
-      {(groups.length <= 1 || completed === scheduled.length) && (
-        <Section
-          title={groups[0]?.title ?? "Today’s habits"}
-          aside={scheduled.length ? `${scheduled.length} planned` : undefined}
-        />
-      )}
+      {(daily.length > 0 || !scheduled.length) &&
+        (groups.length <= 1 || dailyCompleted === daily.length) && (
+          <Section
+            title={groups[0]?.title ?? "Today’s habits"}
+            aside={daily.length ? `${daily.length} planned` : undefined}
+          />
+        )}
       {!hasActiveHabits ? (
         <Empty
           title={habits.length ? "All habits are archived" : "No habits yet"}
           message={
             habits.length
               ? "Your history is saved. Restore a habit from Settings."
-              : "Add a habit and choose which days to track it."
+              : "Add a habit and choose how often to track it."
           }
           action={
             <Button
@@ -246,6 +261,12 @@ export default function Today() {
               </View>
             );
           })}
+          {!!weeklyUnfinished.length && (
+            <View style={{ gap: 12 }}>
+              <Section title="Weekly goals" />
+              {weeklyUnfinished.map(renderHabit)}
+            </View>
+          )}
           {completed > 0 && (
             <Disclosure
               title={`${completed} completed`}
@@ -266,6 +287,8 @@ export default function Today() {
                     </View>
                   );
                 })}
+              {completedExpanded &&
+                weekly.filter((habit) => done.has(habit.id)).map(renderHabit)}
             </Disclosure>
           )}
         </View>

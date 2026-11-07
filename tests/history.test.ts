@@ -87,3 +87,43 @@ test("archived habits never contribute to Today even if they have a check-in tod
   assert.equal(todayHabits([h], records, "2026-10-26").length, 1);
   assert.equal(todayHabits([h], records, "2026-10-25").length, 0);
 });
+
+test("a paused weekly goal stays in the recap and out of Today", () => {
+  const paused: Habit = {
+    ...h,
+    schedules: [{ effectiveDate: "2026-10-26", weekdays: [], weeklyTarget: 3 }],
+    periods: [
+      { startDate: "2026-10-26", endDate: "2026-10-26" },
+      { startDate: "2026-11-04", endDate: null },
+    ],
+  };
+  assert.deepEqual(todayHabits([paused], records, "2026-10-26"), []);
+  const recap = weeklyRecap([paused], records, "2026-10-26");
+  assert.equal(recap.total.scheduled, 0);
+  assert.deepEqual(recap.weeklyGoals, [{ habit: paused, completed: 1, target: 1 }]);
+});
+
+test("the recap shows a capped goal when a pause ends later this week", () => {
+  const paused: Habit = {
+    ...h,
+    schedules: [{ effectiveDate: "2026-10-26", weekdays: [], weeklyTarget: 5 }],
+    periods: [
+      { startDate: "2026-10-26", endDate: "2026-10-31" },
+      { startDate: "2026-11-06", endDate: null },
+    ],
+  };
+  const recap = weeklyRecap([paused], [], "2026-11-03");
+  assert.deepEqual(recap.weeklyGoals, [{ habit: paused, completed: 0, target: 3 }]);
+});
+
+test("the day before a saved pause remains eligible if the local date moves back", () => {
+  const habit: Habit = {
+    ...h,
+    periods: [
+      { startDate: "2026-10-26", endDate: "2026-10-27" },
+      { startDate: "2026-11-06", endDate: null },
+    ],
+  };
+  assert.deepEqual(todayHabits([habit], [], "2026-10-26"), [habit]);
+  assert.deepEqual(todayHabits([habit], [], "2026-10-27"), []);
+});

@@ -1,5 +1,6 @@
 import { Platform } from "react-native";
 import type { Completion, Habit } from "../domain/models";
+import { parseDate } from "../domain/dates";
 import {
   REMINDER_CATEGORY,
   NOTIFICATION_TASK,
@@ -109,6 +110,8 @@ export function syncReminders(
           })),
         cancel: (id) => n.cancelScheduledNotificationAsync(id),
         schedule: async (plan) => {
+          const date = plan.occurrenceDate ? parseDate(plan.occurrenceDate) : undefined;
+          date?.setHours(plan.hour, plan.minute, 0, 0);
           await n.scheduleNotificationAsync({
             identifier: plan.id,
             content: {
@@ -122,10 +125,12 @@ export function syncReminders(
                 reminderTime: habits.find((h) => h.id === plan.habitId)
                   ?.reminderTime,
                 scheduleWeekday: plan.weekday,
+                ...(plan.occurrenceDate ? { occurrenceDate: plan.occurrenceDate } : {}),
               },
             },
-            trigger:
-              plan.weekday === null
+            trigger: date
+              ? { type: n.SchedulableTriggerInputTypes.DATE, date, channelId: "habits" }
+              : plan.weekday === null
                 ? {
                     type: n.SchedulableTriggerInputTypes.DAILY,
                     hour: plan.hour,

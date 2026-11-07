@@ -3,12 +3,13 @@ import { Pressable, View } from "react-native";
 import { Stack, useRouter, useLocalSearchParams } from "expo-router";
 import { Button, Card, Empty, Screen, Txt } from "../../components/ui";
 import { useApp } from "../../state/AppProvider";
-import { habitStats, isScheduled } from "../../domain/habits";
-import { streakLabel } from "../../domain/labels";
+import { habitStats, isScheduled, scheduleOn, weeklyGoalProgress } from "../../domain/habits";
+import { streakLabel, weeklyGoalLabel } from "../../domain/labels";
 import { TIME_GROUPS } from "../../domain/groups";
 import { scheduleLabel } from "../../components/HabitRow";
 import { CalendarHistory } from "../../components/CalendarHistory";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
+import { PauseHabit } from "../../components/PauseHabit";
 import { useTheme } from "../../theme/ThemeProvider";
 export default function HabitDetail() {
   const router = useRouter();
@@ -31,6 +32,10 @@ export default function HabitDetail() {
       </Screen>
     );
   const stats = habitStats(habit, app.completions, app.today);
+  const weekly = scheduleOn(habit, app.today)?.weeklyTarget !== undefined;
+  const goal = weekly
+    ? weeklyGoalProgress(habit, app.completions, app.today)
+    : undefined;
   async function act() {
     try {
       if (confirm === "delete") {
@@ -89,21 +94,26 @@ export default function HabitDetail() {
       </View>
       <Card>
         <Txt size={24} weight="600">
-          {stats.currentStreak === 0 &&
-          (habit.archived || !isScheduled(habit, app.today))
-            ? "No streak yet"
-            : streakLabel(stats.currentStreak)}
+          {goal
+            ? weeklyGoalLabel(goal.completed, goal.target)
+            : stats.currentStreak === 0 &&
+                (habit.archived || !isScheduled(habit, app.today))
+              ? "No streak yet"
+              : streakLabel(stats.currentStreak)}
         </Txt>
         <Txt muted>
           {stats.totalCompleted}{" "}
-          {stats.totalCompleted === 1 ? "check-in" : "check-ins"} ·{" "}
-          {stats.completionRate}% completion
+          {stats.totalCompleted === 1 ? "check-in" : "check-ins"}
+          {!weekly && ` · ${stats.completionRate}% scheduled-day completion`}
         </Txt>
-        <Txt muted>
-          Longest streak: {stats.longestStreak} scheduled{" "}
-          {stats.longestStreak === 1 ? "day" : "days"}
-        </Txt>
+        {!weekly && (
+          <Txt muted>
+            Longest streak: {stats.longestStreak} scheduled{" "}
+            {stats.longestStreak === 1 ? "day" : "days"}
+          </Txt>
+        )}
       </Card>
+      {!habit.archived && <PauseHabit habit={habit} />}
       <CalendarHistory
         habits={[habit]}
         records={app.completions}

@@ -4,6 +4,7 @@ export type TimeOfDay = "anytime" | "morning" | "afternoon" | "evening";
 export interface Schedule {
   effectiveDate: DateKey;
   weekdays: Weekday[];
+  weeklyTarget?: number;
 }
 // startDate is inclusive; endDate is the first paused date (exclusive).
 export interface ActivePeriod {
@@ -30,6 +31,7 @@ export interface HabitDraft {
   color: string;
   description: string;
   weekdays: Weekday[];
+  weeklyTarget?: number;
   reminderTime: string | null;
 }
 export interface Completion {

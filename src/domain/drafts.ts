@@ -10,7 +10,10 @@ export function isDraftDirty(
       description: draft.description.trim(),
       emoji: draft.emoji.trim(),
       color: draft.color,
-      weekdays: [...new Set(draft.weekdays)].sort((a, b) => a - b),
+      weekdays: draft.weeklyTarget === undefined
+        ? [...new Set(draft.weekdays)].sort((a, b) => a - b)
+        : [],
+      weeklyTarget: draft.weeklyTarget,
       reminderTime: draft.reminderTime,
       timeOfDay: draft.timeOfDay ?? "anytime",
     });

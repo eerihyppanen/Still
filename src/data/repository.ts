@@ -133,6 +133,7 @@ export class HabitRepository {
       habit_id: string;
       effective_date: string;
       weekdays: string;
+      weekly_target: number | null;
     }>("SELECT * FROM schedules ORDER BY effective_date");
     const periods = await this.db.getAllAsync<{
       habit_id: string;
@@ -153,6 +154,7 @@ export class HabitRepository {
         .map((s) => ({
           effectiveDate: s.effective_date,
           weekdays: JSON.parse(s.weekdays) as Weekday[],
+          ...(s.weekly_target === null ? {} : { weeklyTarget: s.weekly_target }),
         })),
       periods: periods
         .filter((p) => p.habit_id === row.id)
@@ -246,18 +248,28 @@ export class HabitRepository {
           );
           await this.writeHabitOrder([...(existingOrder ?? []), habitId]);
         }
-        const previous = await this.db.getFirstAsync<{ weekdays: string }>(
-          "SELECT weekdays FROM schedules WHERE habit_id=? AND effective_date<=? ORDER BY effective_date DESC LIMIT 1",
+        const previous = await this.db.getFirstAsync<{
+          weekdays: string;
+          weekly_target: number | null;
+        }>(
+          "SELECT weekdays,weekly_target FROM schedules WHERE habit_id=? AND effective_date<=? ORDER BY effective_date DESC LIMIT 1",
           habitId,
           today,
         );
         const days = JSON.stringify(draft.weekdays);
-        if (!previous || previous.weekdays !== days)
+        const weeklyTarget = draft.weeklyTarget ?? null;
+        if (
+          !previous ||
+          previous.weekdays !== days ||
+          previous.weekly_target !== weeklyTarget
+        )
           await this.db.runAsync(
-            "INSERT INTO schedules (habit_id,effective_date,weekdays) VALUES (?,?,?) ON CONFLICT(habit_id,effective_date) DO UPDATE SET weekdays=excluded.weekdays",
+            `INSERT INTO schedules (habit_id,effective_date,weekdays,weekly_target) VALUES (?,?,?,?)
+             ON CONFLICT(habit_id,effective_date) DO UPDATE SET weekdays=excluded.weekdays, weekly_target=excluded.weekly_target`,
             habitId,
             today,
             days,
+            weeklyTarget,
           );
         await this.db.runAsync(
           "INSERT INTO settings(key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
@@ -320,23 +332,79 @@ export class HabitRepository {
       }),
     );
   }
+  setPause(id: string, resumeDate: DateKey | null, today: DateKey) {
+    return this.serial(() =>
+      this.transaction(async () => {
+        parseDate(today);
+        if (resumeDate !== null) {
+          parseDate(resumeDate);
+          if (resumeDate <= today) throw new Error("Choose a date after today.");
+        }
+        const open = await this.db.getFirstAsync<{
+          id: number;
+          start_date: DateKey;
+        }>(
+          `SELECT p.id,p.start_date FROM active_periods p JOIN habits h ON p.habit_id=h.id
+           WHERE h.id=? AND h.archived=0 AND h.created_date<=? AND p.end_date IS NULL`,
+          id,
+          today,
+        );
+        if (!open) throw new Error("This habit can’t be paused right now.");
+        if (open.start_date > today) {
+          // A local date change can move today into the period before the pause.
+          await this.db.runAsync(
+            "UPDATE active_periods SET end_date=? WHERE habit_id=? AND start_date<=? AND end_date>?",
+            today,
+            id,
+            today,
+            today,
+          );
+          await this.db.runAsync(
+            "UPDATE active_periods SET start_date=? WHERE id=?",
+            resumeDate ?? today,
+            open.id,
+          );
+        } else if (resumeDate !== null) {
+          await this.db.runAsync(
+            "UPDATE active_periods SET end_date=? WHERE id=?",
+            today,
+            open.id,
+          );
+          await this.db.runAsync(
+            "INSERT INTO active_periods (habit_id,start_date) VALUES (?,?)",
+            id,
+            resumeDate,
+          );
+        }
+      }),
+    );
+  }
   setArchived(id: string, archived: boolean, today: DateKey) {
     return this.serial(() =>
       this.transaction(async () => {
         parseDate(today);
-        const habit = await this.db.getFirstAsync<{ archived: number }>(
-          "SELECT archived FROM habits WHERE id=?",
+        const habit = await this.db.getFirstAsync<{
+          archived: number;
+          created_date: DateKey;
+        }>(
+          "SELECT archived,created_date FROM habits WHERE id=?",
           id,
         );
         if (!habit) throw new Error("This habit no longer exists.");
         if (!!habit.archived === archived) return;
-        if (archived)
+        if (archived) {
+          await this.db.runAsync(
+            "DELETE FROM active_periods WHERE habit_id=? AND end_date IS NULL AND start_date>? AND start_date>?",
+            id,
+            today,
+            habit.created_date,
+          );
           await this.db.runAsync(
             "UPDATE active_periods SET end_date=MAX(start_date, ?) WHERE habit_id=? AND end_date IS NULL",
             today,
             id,
           );
-        else {
+        } else {
           const last = await this.db.getFirstAsync<{
             id: number;
             end_date: string;

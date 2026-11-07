@@ -101,6 +101,7 @@ export function Card({
 }
 export function Button({
   title,
+  accessibilityLabel,
   onPress,
   variant = "primary",
   disabled,
@@ -108,6 +109,7 @@ export function Button({
   icon,
 }: {
   title: string;
+  accessibilityLabel?: string;
   onPress: () => void;
   variant?: "primary" | "secondary" | "danger";
   disabled?: boolean;
@@ -124,6 +126,7 @@ export function Button({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled: disabled || loading, busy: loading }}
       disabled={disabled || loading}
       onPress={onPress}

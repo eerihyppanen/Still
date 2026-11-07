@@ -7,7 +7,7 @@ import { Card, Txt } from "./ui";
 
 export function WeeklyRecap() {
   const { habits, completions, today } = useApp();
-  const { dates, total, mostConsistent, hardestDays } = useMemo(
+  const { dates, total, mostConsistent, hardestDays, weeklyGoals } = useMemo(
     () => weeklyRecap(habits, completions, today),
     [habits, completions, today],
   );
@@ -21,11 +21,13 @@ export function WeeklyRecap() {
       <Txt size={13} muted>
         {range} · This week so far
       </Txt>
-      <Txt size={22} weight="700">
-        {total.scheduled
-          ? `${total.completed} of ${total.scheduled} planned ${total.scheduled === 1 ? "check-in" : "check-ins"} complete`
-          : "No planned check-ins yet this week"}
-      </Txt>
+      {(total.scheduled > 0 || !weeklyGoals.length) && (
+        <Txt size={22} weight="700">
+          {total.scheduled
+            ? `${total.completed} of ${total.scheduled} planned ${total.scheduled === 1 ? "check-in" : "check-ins"} complete`
+            : "No planned check-ins yet this week"}
+        </Txt>
+      )}
       {total.scheduled > 0 && (
         <>
           <View style={{ gap: 4 }}>
@@ -53,6 +55,16 @@ export function WeeklyRecap() {
             </Txt>
           </View>
         </>
+      )}
+      {!!weeklyGoals.length && (
+        <View style={{ gap: 6 }}>
+          <Txt weight="600">Weekly goals</Txt>
+          {weeklyGoals.map(({ habit, completed, target }) => (
+            <Txt key={habit.id} muted>
+              {`${habit.name} · ${completed}/${target} days${completed >= target ? " · Goal met" : ""}`}
+            </Txt>
+          ))}
+        </View>
       )}
     </Card>
   );

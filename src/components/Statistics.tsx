@@ -49,6 +49,7 @@ export function Statistics() {
     }
     return {
       overall,
+      totalCheckIns: completions.filter((entry) => entry.date <= today).length,
       current: Math.max(
         0,
         ...streaks.filter((s) => !s.archived).map((s) => s.currentStreak),
@@ -62,8 +63,8 @@ export function Statistics() {
     <>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
         {[
-          { value: `${data.overall.rate}%`, label: "Overall completion" },
-          { value: data.overall.completed, label: "Total check-ins" },
+          { value: data.overall.scheduled ? `${data.overall.rate}%` : "—", label: "Scheduled-day completion" },
+          { value: data.totalCheckIns, label: "Total check-ins" },
           { value: data.current, label: "Best current streak" },
           { value: data.longest, label: "Longest habit streak" },
         ].map((stat) => (
@@ -81,8 +82,7 @@ export function Statistics() {
         ))}
       </View>
       <Txt size={12} muted>
-        Streaks count scheduled days for an individual habit. Today’s planned
-        habits are included in completion rates.
+        Streaks and completion rates use specific-day schedules. Weekly goals are shown in the recap.
       </Txt>
       <ProgressChart
         title="This week"

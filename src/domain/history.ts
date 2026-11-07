@@ -1,5 +1,5 @@
 import type { Completion, DateKey, Habit } from "./models";
-import { isScheduled, summarize } from "./habits";
+import { isScheduled, pausedUntil, summarize, weeklyGoalProgress } from "./habits";
 import { weekDates } from "./dates";
 export function dailyProgress(
   habits: Habit[],
@@ -20,6 +20,7 @@ export function todayHabits(
   return habits.filter(
     (h) =>
       !h.archived &&
+      !pausedUntil(h, today) &&
       (isScheduled(h, today) ||
         records.some((c) => c.habitId === h.id && c.date === today)),
   );
@@ -61,5 +62,9 @@ export function weeklyRecap(
           day.completed * lowest.scheduled === lowest.completed * day.scheduled,
       )
     : [];
-  return { dates, total, mostConsistent, hardestDays };
+  const weeklyGoals = habits
+    .filter((habit) => habit.schedules.some((schedule) => schedule.weeklyTarget !== undefined))
+    .map((habit) => ({ habit, ...weeklyGoalProgress(habit, records, today) }))
+    .filter((goal) => goal.target > 0);
+  return { dates, total, mostConsistent, hardestDays, weeklyGoals };
 }

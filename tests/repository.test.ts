@@ -5,8 +5,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { HabitRepository, type SqlParam } from "../src/data/repository";
 import { sqliteAdapter } from "./sqlite-adapter";
+import { SCHEMA_VERSION } from "../src/data/migrations";
 import type { HabitDraft } from "../src/domain/models";
-import { isScheduled, habitStats } from "../src/domain/habits";
+import { isScheduled, habitStats, summarize, weeklyGoalProgress, pausedUntil } from "../src/domain/habits";
 
 const draft: HabitDraft = {
   name: "Read",
@@ -16,6 +17,96 @@ const draft: HabitDraft = {
   weekdays: [1, 2, 3, 4, 5, 6, 0],
   reminderTime: null,
 };
+
+test("weekly goals accept any active day, keep separate progress, and reset on Monday", async () => {
+  const { db, close } = sqliteAdapter();
+  try {
+    const repo = new HabitRepository(db);
+    await repo.initialize();
+    const id = await repo.saveHabit({ ...draft, weekdays: [], weeklyTarget: 3 }, "2026-10-26");
+    await repo.setCompletion(id, "2026-10-27", true, "2026-11-01");
+    await repo.setCompletion(id, "2026-11-01", true, "2026-11-01");
+    const { habits: [habit], completions } = await repo.snapshot();
+    assert.deepEqual(weeklyGoalProgress(habit!, completions, "2026-11-01"), { completed: 2, target: 3 });
+    assert.deepEqual(weeklyGoalProgress(habit!, completions, "2026-11-02"), { completed: 0, target: 3 });
+    assert.equal(summarize([habit!], completions, ["2026-10-27", "2026-10-28"], "2026-11-01").scheduled, 0);
+  } finally {
+    close();
+  }
+});
+
+test("a timed pause preserves check-ins, survives reload, and resumes early or on its date", async () => {
+  const { db, close } = sqliteAdapter();
+  try {
+    let repo = new HabitRepository(db);
+    await repo.initialize();
+    const id = await repo.saveHabit(draft, "2026-10-26");
+    await repo.setCompletion(id, "2026-10-27", true, "2026-10-27");
+    await repo.setPause(id, "2026-11-05", "2026-10-28");
+    repo = new HabitRepository(db);
+    const paused = await repo.snapshot();
+    assert.deepEqual(paused.completions.map((entry) => ({ ...entry })), [{ habitId: id, date: "2026-10-27" }]);
+    assert.equal(pausedUntil(paused.habits[0]!, "2026-10-30"), "2026-11-05");
+    assert.equal(isScheduled(paused.habits[0]!, "2026-10-30"), false);
+    assert.equal(isScheduled(paused.habits[0]!, "2026-11-05"), true);
+    await assert.rejects(repo.setCompletion(id, "2026-10-30", true, "2026-10-30"), /scheduled/);
+    await repo.setPause(id, "2026-11-06", "2026-10-30");
+    await repo.setPause(id, null, "2026-11-01");
+    await repo.setCompletion(id, "2026-11-01", true, "2026-11-01");
+    const resumed = (await repo.snapshot()).habits[0]!;
+    assert.equal(isScheduled(resumed, "2026-10-31"), false);
+    assert.equal(isScheduled(resumed, "2026-11-01"), true);
+  } finally {
+    close();
+  }
+});
+
+test("a version 1 database upgrades with fixed schedules and check-ins intact", async () => {
+  const { db, close } = sqliteAdapter();
+  try {
+    let repo = new HabitRepository(db);
+    await repo.initialize();
+    const id = await repo.saveHabit({ ...draft, weekdays: [1, 3] }, "2026-10-26");
+    await repo.setCompletion(id, "2026-10-26", true, "2026-10-26");
+    const before = await repo.snapshot();
+    await db.execAsync("ALTER TABLE schedules DROP COLUMN weekly_target; PRAGMA user_version = 1;");
+    repo = new HabitRepository(db);
+    await repo.initialize();
+    assert.deepEqual(await repo.snapshot(), before);
+    await repo.saveHabit({ ...draft, weeklyTarget: 3 }, "2026-10-27", id);
+    const habit = (await repo.snapshot()).habits[0]!;
+    assert.deepEqual(habit.schedules, [
+      { effectiveDate: "2026-10-26", weekdays: [1, 3] },
+      { effectiveDate: "2026-10-27", weekdays: [], weeklyTarget: 3 },
+    ]);
+    assert.equal(habitStats(habit, before.completions, "2026-10-27").currentStreak, 1);
+  } finally {
+    close();
+  }
+});
+
+test("a partial week caps the goal and archive and restore preserve a past pause", async () => {
+  const { db, close } = sqliteAdapter();
+  try {
+    const repo = new HabitRepository(db);
+    await repo.initialize();
+    const id = await repo.saveHabit({ ...draft, weeklyTarget: 5 }, "2026-10-29");
+    await repo.setCompletion(id, "2026-10-29", true, "2026-10-29");
+    await repo.setPause(id, "2026-11-10", "2026-10-30");
+    const { habits: [habit], completions } = await repo.snapshot();
+    assert.deepEqual(weeklyGoalProgress(habit!, completions, "2026-10-30"), { completed: 1, target: 1 });
+    assert.deepEqual(weeklyGoalProgress(habit!, completions, "2026-11-08"), { completed: 0, target: 0 });
+    await repo.setArchived(id, true, "2026-11-03");
+    await repo.setArchived(id, false, "2026-11-04");
+    const restored = (await repo.snapshot()).habits[0]!;
+    assert.equal(isScheduled(restored, "2026-10-29"), true);
+    assert.equal(isScheduled(restored, "2026-11-03"), false);
+    assert.equal(pausedUntil(restored, "2026-11-04"), undefined);
+    assert.equal(isScheduled(restored, "2026-11-04"), true);
+  } finally {
+    close();
+  }
+});
 
 test("a dropped full order persists with archived slots, history and settings intact", async () => {
   const dir = mkdtempSync(join(tmpdir(), "still-drop-test-"));
@@ -65,7 +156,7 @@ test("a dropped full order persists with archived slots, history and settings in
           "PRAGMA user_version",
         )
       )?.user_version,
-      1,
+      SCHEMA_VERSION,
     );
   } finally {
     adapter.close();
@@ -195,7 +286,7 @@ test("time-of-day metadata survives reopen without changing history, order or sc
           "PRAGMA user_version",
         )
       )?.user_version,
-      1,
+      SCHEMA_VERSION,
     );
     await assert.rejects(
       repo.saveHabit(
@@ -444,7 +535,7 @@ test("habit order survives reopening without changing check-ins or settings", as
           "PRAGMA user_version",
         )
       )?.user_version,
-      1,
+      SCHEMA_VERSION,
     );
   } finally {
     adapter.close();
@@ -571,7 +662,7 @@ test("check-in vibration defaults off and persists without a schema change", asy
     assert.equal(
       (await db.getFirstAsync<{ user_version: number }>("PRAGMA user_version"))
         ?.user_version,
-      1,
+      SCHEMA_VERSION,
     );
   } finally {
     close();

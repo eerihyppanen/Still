@@ -6,7 +6,7 @@ import { HabitRow } from "./HabitRow";
 import { useTheme } from "../theme/ThemeProvider";
 import { useApp } from "../state/AppProvider";
 import { dailyProgress } from "../domain/history";
-import { isScheduled } from "../domain/habits";
+import { isScheduled, scheduleOn } from "../domain/habits";
 import { formatDate, monthDates, parseDate, shiftMonth } from "../domain/dates";
 import type { Completion, DateKey, Habit } from "../domain/models";
 
@@ -37,6 +37,18 @@ export function CalendarHistory({
     () => dailyProgress(habits, records, monthDates(month), today),
     [habits, records, month, today],
   );
+  const weeklyCheckIns = useMemo(() => {
+    const byId = new Map(habits.map((habit) => [habit.id, habit]));
+    const counts = new Map<DateKey, number>();
+    const monthPrefix = month.slice(0, 7);
+    for (const { habitId, date } of records) {
+      if (date > today || !date.startsWith(monthPrefix)) continue;
+      const habit = byId.get(habitId);
+      if (habit && scheduleOn(habit, date)?.weeklyTarget !== undefined)
+        counts.set(date, (counts.get(date) ?? 0) + 1);
+    }
+    return counts;
+  }, [habits, records, month, today]);
   const offset = (parseDate(month).getDay() + 6) % 7;
   const earliest =
     habits
@@ -48,6 +60,7 @@ export function CalendarHistory({
   const selectedHabits = habits.filter(
     (h) => isScheduled(h, selected) || done.has(h.id),
   );
+  const selectedProgress = days.find((day) => day.date === selected);
   function selectDate(date: DateKey) {
     setLocalDate(date);
     onDateChange?.(date);
@@ -106,6 +119,7 @@ export function CalendarHistory({
         ))}
         {days.map((day) => {
           const full = day.scheduled > 0 && day.completed === day.scheduled;
+          const weekly = weeklyCheckIns.get(day.date) ?? 0;
           return (
             <Pressable
               key={day.date}
@@ -114,7 +128,11 @@ export function CalendarHistory({
                 selected: selected === day.date,
                 disabled: day.date > today,
               }}
-              accessibilityLabel={`${formatDate(day.date, { month: "long", day: "numeric" })}, ${day.completed} of ${day.scheduled} complete`}
+              accessibilityLabel={[
+                formatDate(day.date, { month: "long", day: "numeric" }),
+                day.scheduled ? `${day.completed} of ${day.scheduled} planned check-ins complete` : undefined,
+                weekly ? `${weekly} weekly goal ${weekly === 1 ? "check-in" : "check-ins"}` : undefined,
+              ].filter(Boolean).join(", ")}
               disabled={day.date > today}
               onPress={() => selectDate(day.date)}
               hitSlop={2}
@@ -160,7 +178,7 @@ export function CalendarHistory({
                     color: full ? colors.success : colors.primary,
                   }}
                 >
-                  {full ? "✓" : day.completed ? "●" : day.scheduled ? "·" : ""}
+                  {full ? "✓" : day.completed || weekly ? "●" : day.scheduled ? "·" : ""}
                 </Txt>
               </View>
             </Pressable>
@@ -168,7 +186,7 @@ export function CalendarHistory({
         })}
       </View>
       <Txt size={12} muted>
-        ✓ All complete ● Some complete · Planned
+        ✓ All planned done ● Check-in · Planned
       </Txt>
       <View
         style={{ height: 1, backgroundColor: colors.border, marginVertical: 6 }}
@@ -177,10 +195,11 @@ export function CalendarHistory({
         <Txt weight="600">
           {formatDate(selected, { month: "short", day: "numeric" })}
         </Txt>
-        <Txt muted size={13}>
-          {selectedHabits.filter((h) => done.has(h.id)).length} of{" "}
-          {selectedHabits.length} complete
-        </Txt>
+        {!!selectedProgress?.scheduled && (
+          <Txt muted size={13}>
+            {selectedProgress.completed} of {selectedProgress.scheduled} planned complete
+          </Txt>
+        )}
       </View>
       {!selectedHabits.length ? (
         <Txt size={14} muted>
@@ -193,7 +212,9 @@ export function CalendarHistory({
             habit={habit}
             compact
             completed={done.has(habit.id)}
-            subtitle={habit.archived ? "Archived habit" : undefined}
+            subtitle={scheduleOn(habit, selected)?.weeklyTarget !== undefined
+              ? "Weekly goal"
+              : habit.archived ? "Archived habit" : undefined}
             disabled={app.busy}
             onToggle={() =>
               void app

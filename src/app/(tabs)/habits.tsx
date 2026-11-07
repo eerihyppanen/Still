@@ -16,6 +16,8 @@ import {
 } from "../../components/ReorderHabits";
 import { useApp } from "../../state/AppProvider";
 import { useTheme } from "../../theme/ThemeProvider";
+import { pausedUntil } from "../../domain/habits";
+import { resumeDateLabel } from "../../domain/labels";
 export default function Habits() {
   const router = useRouter();
   const app = useApp();
@@ -29,6 +31,8 @@ export default function Habits() {
     contentHeight: 0,
   });
   const active = app.habits.filter((h) => !h.archived);
+  const resumes = new Map(active.map((habit) => [habit.id, pausedUntil(habit, app.today)]));
+  const paused = active.filter((habit) => resumes.get(habit.id)).length;
   const showOrdering = reordering && active.length > 1;
   return (
     <Screen
@@ -53,7 +57,7 @@ export default function Habits() {
     >
       <Heading
         title="Habits"
-        subtitle={`${active.length} active ${active.length === 1 ? "habit" : "habits"}`}
+        subtitle={paused ? `${active.length - paused} active · ${paused} paused` : `${active.length} active ${active.length === 1 ? "habit" : "habits"}`}
         action={
           active.length > 0 && (
             <View
@@ -122,9 +126,10 @@ export default function Habits() {
           />
         ) : (
           <View style={{ gap: 12 }}>
-            {active.map((h) => (
-              <HabitRow key={h.id} habit={h} />
-            ))}
+            {active.map((h) => {
+              const resume = resumes.get(h.id);
+              return <HabitRow key={h.id} habit={h} subtitle={resume ? `Paused until ${resumeDateLabel(resume, app.today)}` : undefined} />;
+            })}
           </View>
         )
       ) : (

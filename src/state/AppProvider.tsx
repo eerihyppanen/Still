@@ -42,6 +42,7 @@ interface AppContextValue extends Snapshot {
     completed: boolean,
   ) => Promise<void>;
   setArchived: (id: string, archived: boolean) => Promise<void>;
+  setPause: (id: string, resumeDate: DateKey | null) => Promise<void>;
   deleteHabit: (id: string) => Promise<void>;
   moveHabit: (id: string, direction: "up" | "down") => Promise<void>;
   reorderHabits: (ids: string[]) => Promise<void>;
@@ -165,11 +166,19 @@ export function AppProvider({ children }: React.PropsWithChildren) {
     [refresh],
   );
   useEffect(() => {
-    const update = () => setToday(dateKey());
-    const timer = setInterval(update, 15000);
+    let lastDate = dateKey();
+    const refreshOnDateChange = () => {
+      const date = dateKey();
+      if (date === lastDate) return;
+      lastDate = date;
+      setToday(date);
+      void refresh().catch((e) => setError(String(e)));
+    };
+    const timer = setInterval(refreshOnDateChange, 15000);
     const listener = AppState.addEventListener("change", (state) => {
       if (state === "active") {
-        update();
+        lastDate = dateKey();
+        setToday(lastDate);
         void refresh().catch((e) => setError(String(e)));
       }
     });
@@ -234,6 +243,8 @@ export function AppProvider({ children }: React.PropsWithChildren) {
           ),
         setArchived: (id, archived) =>
           mutate((repo) => repo.setArchived(id, archived, dateKey())),
+        setPause: (id, resumeDate) =>
+          mutate((repo) => repo.setPause(id, resumeDate, dateKey())),
         deleteHabit: (id) => mutate((repo) => repo.deleteHabit(id)),
         moveHabit: (id, direction) =>
           mutate((repo) => repo.moveHabit(id, direction)),

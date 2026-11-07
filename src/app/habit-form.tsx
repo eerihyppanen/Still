@@ -18,6 +18,7 @@ import {
 } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Disclosure } from "../components/Disclosure";
+import { ChoiceControl } from "../components/ChoiceControl";
 import { useHeaderHeight } from "expo-router/react-navigation";
 import { Button, Card, FieldError, Screen, Txt, s } from "../components/ui";
 import { useApp } from "../state/AppProvider";
@@ -31,7 +32,7 @@ import {
   type TimeOfDay,
 } from "../domain/models";
 import { TIME_GROUPS } from "../domain/groups";
-import { getDraftErrors, validateDraft } from "../domain/habits";
+import { getDraftErrors, scheduleOn, validateDraft } from "../domain/habits";
 import { isDraftDirty } from "../domain/drafts";
 import { isHabitEmoji } from "../domain/emoji";
 import { ConfirmDialog } from "../components/ConfirmDialog";
@@ -45,15 +46,18 @@ export default function HabitForm() {
   const headerHeight = useHeaderHeight();
   const { width } = useWindowDimensions();
   const habit = app.habits.find((h) => h.id === id);
+  const schedule = habit && scheduleOn(habit, app.today);
   const [name, setName] = useState(habit?.name ?? ""),
     [description, setDescription] = useState(habit?.description ?? "");
   const [emoji, setEmoji] = useState(habit?.emoji ?? HABIT_EMOJIS[0]!),
     [color, setColor] = useState(habit?.color ?? HABIT_COLORS[0]!);
   const [weekdays, setWeekdays] = useState<Weekday[]>(
-    habit?.schedules[habit.schedules.length - 1]?.weekdays ?? [
-      0, 1, 2, 3, 4, 5, 6,
-    ],
+    schedule && schedule.weekdays.length
+      ? schedule.weekdays
+      : [0, 1, 2, 3, 4, 5, 6],
   );
+  const [flexible, setFlexible] = useState(schedule?.weeklyTarget !== undefined);
+  const [weeklyTarget, setWeeklyTarget] = useState(schedule?.weeklyTarget ?? 3);
   const [reminder, setReminder] = useState(!!habit?.reminderTime),
     [time, setTime] = useState(habit?.reminderTime ?? "09:00");
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>(
@@ -83,6 +87,7 @@ export default function HabitForm() {
     emoji,
     color,
     weekdays,
+    weeklyTarget: flexible ? weeklyTarget : undefined,
     reminderTime: reminder ? time : null,
     timeOfDay,
   };
@@ -129,6 +134,7 @@ export default function HabitForm() {
       [
         "name",
         "weekdays",
+        "weeklyTarget",
         "emoji",
         "color",
         "description",
@@ -221,68 +227,110 @@ export default function HabitForm() {
         </View>
         <View
           onLayout={(event) => {
-            fieldY.current.weekdays = event.nativeEvent.layout.y;
+            fieldY.current.weekdays = fieldY.current.weeklyTarget =
+              event.nativeEvent.layout.y;
           }}
         >
           <Card>
-            <View style={[s.row, { flexWrap: "wrap", gap: 8 }]}>
-              <Txt weight="600">Schedule</Txt>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => setWeekdays([0, 1, 2, 3, 4, 5, 6])}
-                style={{ minHeight: 44, justifyContent: "center" }}
-              >
-                <Txt size={14} style={{ color: colors.primary }}>
-                  Every day
-                </Txt>
-              </Pressable>
-            </View>
-            <View style={[s.row, { gap: 3, flexWrap: "wrap" }]}>
-              {WEEKDAYS.map((day) => (
-                <Pressable
-                  key={day.value}
-                  accessibilityRole="checkbox"
-                  accessibilityLabel={day.label}
-                  accessibilityState={{ checked: weekdays.includes(day.value) }}
-                  aria-checked={weekdays.includes(day.value)}
-                  onPress={() =>
-                    setWeekdays((days) =>
-                      days.includes(day.value)
-                        ? days.filter((d) => d !== day.value)
-                        : [...days, day.value],
-                    )
-                  }
-                  style={{
-                    minWidth: 44,
-                    minHeight: 46,
-                    flex: 1,
-                    flexBasis: width < 420 ? "22%" : undefined,
-                    borderRadius: 14,
-                    backgroundColor: weekdays.includes(day.value)
-                      ? colors.primary
-                      : colors.background,
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
+            <Txt weight="600">Schedule</Txt>
+            <ChoiceControl
+              options={[
+                { value: "fixed", label: "Specific days" },
+                { value: "flexible", label: "Weekly goal" },
+              ]}
+              value={flexible ? "flexible" : "fixed"}
+              onChange={(value) => setFlexible(value === "flexible")}
+            />
+            {flexible ? (
+              <>
+                <View style={[s.row, { gap: 8 }]}>
+                  <Button
+                    title="−"
+                    accessibilityLabel="Decrease days per week"
+                    variant="secondary"
+                    disabled={weeklyTarget === 1}
+                    onPress={() => setWeeklyTarget((days) => Math.max(1, days - 1))}
+                  />
                   <Txt
                     weight="600"
-                    style={{
-                      color: weekdays.includes(day.value)
-                        ? colors.onPrimary
-                        : colors.muted,
-                    }}
+                    style={{ flexShrink: 1, textAlign: "center" }}
+                    accessibilityLiveRegion="polite"
                   >
-                    {day.short}
+                    {weeklyTarget} {weeklyTarget === 1 ? "day" : "days"} per week
                   </Txt>
-                </Pressable>
-              ))}
-            </View>
-            <Txt size={13} muted>
-              Select the days to track this habit.
-              {id ? " Changes apply from today." : ""}
-            </Txt>
-            <FieldError message={errors.weekdays} />
+                  <Button
+                    title="+"
+                    accessibilityLabel="Increase days per week"
+                    variant="secondary"
+                    disabled={weeklyTarget === 7}
+                    onPress={() => setWeeklyTarget((days) => Math.min(7, days + 1))}
+                  />
+                </View>
+                <Txt size={13} muted>
+                  Check in on any days. Weeks start on Monday.
+                  {id ? " Changes apply from today." : ""}
+                </Txt>
+                <FieldError message={errors.weeklyTarget} />
+              </>
+            ) : (
+              <>
+                <View style={[s.row, { flexWrap: "wrap", gap: 8 }]}>
+                  <Txt size={14} muted>Pick the days you plan to check in.</Txt>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => setWeekdays([0, 1, 2, 3, 4, 5, 6])}
+                    style={{ minHeight: 44, justifyContent: "center" }}
+                  >
+                    <Txt size={14} style={{ color: colors.primary }}>
+                      Every day
+                    </Txt>
+                  </Pressable>
+                </View>
+                <View style={[s.row, { gap: 3, flexWrap: "wrap" }]}>
+                  {WEEKDAYS.map((day) => (
+                    <Pressable
+                      key={day.value}
+                      accessibilityRole="checkbox"
+                      accessibilityLabel={day.label}
+                      accessibilityState={{ checked: weekdays.includes(day.value) }}
+                      aria-checked={weekdays.includes(day.value)}
+                      onPress={() =>
+                        setWeekdays((days) =>
+                          days.includes(day.value)
+                            ? days.filter((d) => d !== day.value)
+                            : [...days, day.value],
+                        )
+                      }
+                      style={{
+                        minWidth: 44,
+                        minHeight: 46,
+                        flex: 1,
+                        flexBasis: width < 420 ? "22%" : undefined,
+                        borderRadius: 14,
+                        backgroundColor: weekdays.includes(day.value)
+                          ? colors.primary
+                          : colors.background,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Txt
+                        weight="600"
+                        style={{
+                          color: weekdays.includes(day.value)
+                            ? colors.onPrimary
+                            : colors.muted,
+                        }}
+                      >
+                        {day.short}
+                      </Txt>
+                    </Pressable>
+                  ))}
+                </View>
+                {id && <Txt size={13} muted>Changes apply from today.</Txt>}
+                <FieldError message={errors.weekdays} />
+              </>
+            )}
           </Card>
         </View>
         <Card>
@@ -529,6 +577,11 @@ export default function HabitForm() {
                     inputRef={reminderRef}
                   />
                   <FieldError message={errors.reminderTime} />
+                  {flexible && (
+                    <Txt size={13} muted>
+                      Weekly goals send a reminder every day at this time.
+                    </Txt>
+                  )}
                   <Txt size={13} muted accessibilityLiveRegion="polite">
                     {reminderFeedback.message}
                   </Txt>

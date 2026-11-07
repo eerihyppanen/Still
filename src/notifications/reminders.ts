@@ -1,4 +1,6 @@
 import type { Habit } from "../domain/models";
+import { addDays } from "../domain/dates";
+import { isScheduled, pendingResumeDate, scheduleOn } from "../domain/habits";
 export interface ReminderPlan {
   id: string;
   habitId: string;
@@ -7,6 +9,7 @@ export interface ReminderPlan {
   hour: number;
   minute: number;
   weekday: number | null;
+  occurrenceDate?: string;
   signature: string;
 }
 export interface ScheduledReminder {
@@ -25,19 +28,31 @@ export function buildReminderPlan(
 ): ReminderPlan[] {
   return habits.flatMap((habit) => {
     if (habit.archived || !habit.reminderTime) return [];
-    const schedule = [...habit.schedules]
-      .reverse()
-      .find((s) => s.effectiveDate <= today);
+    const resumeDate = pendingResumeDate(habit, today);
+    const schedule = scheduleOn(habit, resumeDate ?? today);
     if (!schedule) return [];
     const [hour = 9, minute = 0] = habit.reminderTime.split(":").map(Number);
+    const title = `${habit.emoji} ${habit.name}`;
+    const body = "Check in when you’re done.";
+    if (resumeDate) {
+      for (let offset = 0; offset < 7; offset++) {
+        const occurrenceDate = addDays(resumeDate, offset);
+        if (isScheduled(habit, occurrenceDate))
+          return [{
+            id: `still:${habit.id}:resume`,
+            habitId: habit.id,
+            title, body, weekday: null, hour, minute, occurrenceDate,
+            signature: JSON.stringify(["resume-v1", title, body, occurrenceDate, hour, minute, timeZone]),
+          }];
+      }
+      return [];
+    }
     const days =
-      schedule.weekdays.length === 7
+      schedule.weeklyTarget !== undefined || schedule.weekdays.length === 7
         ? [null]
         : [...schedule.weekdays].sort((a, b) => a - b).map((day) => day + 1);
     return days.map((weekday) => {
       const id = `still:${habit.id}:${weekday ?? "daily"}`;
-      const title = `${habit.emoji} ${habit.name}`;
-      const body = "Check in when you’re done.";
       return {
         id,
         habitId: habit.id,

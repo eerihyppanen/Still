@@ -1,20 +1,20 @@
 import type { SqlDatabase } from "./repository";
+export const SCHEMA_VERSION = 2;
 
 export async function migrate(db: SqlDatabase): Promise<void> {
   await db.execAsync(
     "PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000;",
   );
-  const version =
-    (await db.getFirstAsync<{ user_version: number }>("PRAGMA user_version"))
-      ?.user_version ?? 0;
-  if (version > 1)
-    throw new Error(
-      "This database was created by a newer version of Still. Update the app to open it safely.",
-    );
-  if (version === 1) return;
   await db.execAsync("BEGIN IMMEDIATE");
   try {
-    await db.execAsync(`
+    const version =
+      (await db.getFirstAsync<{ user_version: number }>("PRAGMA user_version"))
+        ?.user_version ?? 0;
+    if (version > SCHEMA_VERSION)
+      throw new Error(
+        "This database was created by a newer version of Still. Update the app to open it safely.",
+      );
+    if (version === 0) await db.execAsync(`
       CREATE TABLE habits (
         id TEXT PRIMARY KEY NOT NULL, name TEXT NOT NULL, emoji TEXT NOT NULL,
         color TEXT NOT NULL, description TEXT NOT NULL DEFAULT '', created_date TEXT NOT NULL,
@@ -38,7 +38,10 @@ export async function migrate(db: SqlDatabase): Promise<void> {
       );
       CREATE INDEX completions_by_date ON completions(date);
       CREATE TABLE settings (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL);
-      PRAGMA user_version = 1;
+    `);
+    if (version < 2) await db.execAsync(`
+      ALTER TABLE schedules ADD COLUMN weekly_target INTEGER CHECK (weekly_target BETWEEN 1 AND 7);
+      PRAGMA user_version = 2;
     `);
     await db.execAsync("COMMIT");
   } catch (error) {

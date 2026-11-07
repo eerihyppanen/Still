@@ -1,6 +1,16 @@
 # Verification record
 
-Dates: October 27–November 6, 2026.
+Dates: October 27–November 7, 2026.
+
+## Weekly goals and timed pauses — November 7, 2026
+
+- `npm run check` passed strict TypeScript, Expo lint, and 98 tests. Regression tests cover the version 1 database upgrade, Monday reset, short weeks, pause and early resume, archive/restore during a pause, and replacement of pending reminders.
+- `npm run test:timezones` passed all 21 tests in each of Helsinki, New York, Kolkata, and Honolulu. Review regressions cover a goal due later in the week after a pause and a local date that moves backward across the start of a pause.
+- Android, iOS, and web bundle exports passed. Expo Doctor passed 19 of 20 checks and flagged version mismatches for 16 installed packages. This change keeps the existing dependency versions.
+- In an isolated browser preview from `C:\Users\eehyp\Desktop\Still`, created a two-day weekly goal, checked in, and saw `1/2 this week` on Today. Saved a pause, reloaded the detail screen, verified the resume date and check-in persisted, then resumed early. History showed the weekly check-in on its calendar date and the goal in the recap.
+- Built `releases/Still-1.4.0.apk` (Android code 6, arm64-v8a and x86_64). Android release lint and assembly passed. The APK uses the same package and signing certificate as 1.3.0 and has no Android internet or network-state permissions. SHA-256 is `7747cafa4db1f0ba337be72369e62feaca45384ccd1383e4e116d7bdf10096ce`.
+- Updated the Pixel 7 emulator from 1.3.0 to 1.4.0 and cold-launched it. The existing habit and check-in survived. Created a weekly goal, checked in, picked November 9 in the Android date picker, and saved the pause. The pause survived a cold restart. Resuming early kept the weekly check-in and restored `1/2 this week`.
+- Delivery of the first reminder after a pause still needs a device check. The reminder tests use a controlled scheduler.
 
 ## Three-pass review and Still 1.3.0 APK — November 6, 2026
 
