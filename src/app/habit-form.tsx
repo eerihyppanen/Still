@@ -579,7 +579,7 @@ export default function HabitForm() {
                   <FieldError message={errors.reminderTime} />
                   {flexible && (
                     <Txt size={13} muted>
-                      Weekly goals send a reminder every day at this time.
+                      Reminds you daily until you meet your weekly goal.
                     </Txt>
                   )}
                   <Txt size={13} muted accessibilityLiveRegion="polite">

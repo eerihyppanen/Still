@@ -88,7 +88,7 @@ test("archived habits never contribute to Today even if they have a check-in tod
   assert.equal(todayHabits([h], records, "2026-10-25").length, 0);
 });
 
-test("a paused weekly goal stays in the recap and out of Today", () => {
+test("a paused habit keeps today's saved check-in visible until it is undone", () => {
   const paused: Habit = {
     ...h,
     schedules: [{ effectiveDate: "2026-10-26", weekdays: [], weeklyTarget: 3 }],
@@ -97,7 +97,9 @@ test("a paused weekly goal stays in the recap and out of Today", () => {
       { startDate: "2026-11-04", endDate: null },
     ],
   };
-  assert.deepEqual(todayHabits([paused], records, "2026-10-26"), []);
+  assert.deepEqual(todayHabits([paused], records, "2026-10-26"), [paused]);
+  assert.deepEqual(todayHabits([paused], [], "2026-10-26"), []);
+  assert.deepEqual(todayHabits([paused], records, "2026-10-27"), []);
   const recap = weeklyRecap([paused], records, "2026-10-26");
   assert.equal(recap.total.scheduled, 0);
   assert.deepEqual(recap.weeklyGoals, [{ habit: paused, completed: 1, target: 1 }]);

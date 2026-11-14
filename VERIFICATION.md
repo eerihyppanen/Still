@@ -1,6 +1,13 @@
 # Verification record
 
-Dates: October 27–November 7, 2026.
+Dates: October 27–November 14, 2026.
+
+## Weekly goal and pause follow-up — November 14, 2026
+
+- `npm run check` passed strict TypeScript, Expo lint, and 101 tests. Calendar tests passed in Helsinki, New York, Kolkata, and Honolulu.
+- On the Pixel 7 emulator, pausing an already checked-in habit kept it under Completed. Undo removed it from Today. Meeting a weekly goal moved it into the collapsed Goals met section and replaced the daily Android alarm with one for the following Monday. Undo reinstated the daily alarm, and logging an extra day kept the Monday alarm.
+- Verified delivery of a paused habit’s first scheduled reminder with Still closed and no app process running before the alarm. Advanced the emulator clock through Android’s best-effort delivery window, then confirmed the notification in the tray. Done saved the check-in and restored the recurring alarm before opening Still.
+- Built `releases/Still-1.4.0-goal-fixes.apk` for Android testing. It matches the original 1.4.0 signing certificate, supports arm64-v8a and x86_64, and has no Android internet or network-state permissions. SHA-256 is `9c13b822504fae0d20c637b50fb2179ac09fcaccd5cf7bbdfd6147b9c67d900f`.
 
 ## Weekly goals and timed pauses — November 7, 2026
 

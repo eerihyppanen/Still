@@ -117,6 +117,9 @@ export function weeklyGoalProgress(
   }
   return { completed, target: Math.min(target, eligible) };
 }
+export function isWeeklyGoalMet({ completed, target }: ReturnType<typeof weeklyGoalProgress>) {
+  return target > 0 && completed >= target;
+}
 export type HabitDraftErrors = Partial<Record<keyof HabitDraft, string>>;
 export function getDraftErrors(draft: HabitDraft): HabitDraftErrors {
   const errors: HabitDraftErrors = {};

@@ -1,5 +1,5 @@
 import type { Completion, DateKey, Habit } from "./models";
-import { isScheduled, pausedUntil, summarize, weeklyGoalProgress } from "./habits";
+import { isScheduled, summarize, weeklyGoalProgress } from "./habits";
 import { weekDates } from "./dates";
 export function dailyProgress(
   habits: Habit[],
@@ -17,12 +17,11 @@ export function todayHabits(
   records: Completion[],
   today: DateKey,
 ): Habit[] {
+  const doneToday = new Set(
+    records.filter((record) => record.date === today).map((record) => record.habitId),
+  );
   return habits.filter(
-    (h) =>
-      !h.archived &&
-      !pausedUntil(h, today) &&
-      (isScheduled(h, today) ||
-        records.some((c) => c.habitId === h.id && c.date === today)),
+    (habit) => !habit.archived && (doneToday.has(habit.id) || isScheduled(habit, today)),
   );
 }
 

@@ -114,7 +114,7 @@ The habit form shows whether reminders are off, allowed, blocked, unavailable in
 
 Daily routines use one repeating daily notification; selected-day routines use weekly notifications for their selected weekdays. The app reconciles its own scheduled notifications after saves, edits, archive/restore, deletion, settings changes, and foreground/resume. It includes the current time zone in each schedule signature so travel triggers reconciliation. An incomplete schedule is cleaned up after failure and can be retried from Settings or on reopening.
 
-Weekly goals use a daily reminder when a time is set and reminders are enabled. Pausing replaces the recurring reminders with one reminder for the first scheduled day back. Opening Still after the pause restores recurring reminders.
+Weekly goals use a daily reminder until the target is met. Still then schedules one reminder for the next Monday, or the first scheduled day after a longer pause. Pausing also replaces recurring reminders with one reminder for the first scheduled day back. Opening Still or using Done or Snooze on that reminder restores recurring reminders for an unfinished goal.
 
 To stay within pending notification capacity, the app allows up to 60 notification slots. It reports an error and cancels its reminder set if the configuration exceeds that limit; it never silently drops some habits. Each every-day habit uses one slot; a selected-day habit uses one per selected weekday. Delivery is a gentle, best-effort reminder, not an exact alarm. The OS can delay it under Focus, battery saving, or background restrictions. Reopen the app after changing device time zones. OS delivery across DST and time zone changes still needs device verification.
 

@@ -17,8 +17,14 @@ import { Disclosure } from "../../components/Disclosure";
 import { StillMark } from "../../components/StillMark";
 import { useApp } from "../../state/AppProvider";
 import { useTheme } from "../../theme/ThemeProvider";
-import { habitStats, scheduleOn, weeklyGoalProgress } from "../../domain/habits";
-import { weeklyGoalLabel } from "../../domain/labels";
+import {
+  habitStats,
+  isWeeklyGoalMet,
+  pausedUntil,
+  scheduleOn,
+  weeklyGoalProgress,
+} from "../../domain/habits";
+import { resumeDateLabel, weeklyGoalLabel } from "../../domain/labels";
 import { todayHabits } from "../../domain/history";
 import { groupTodayHabits } from "../../domain/groups";
 import { formatDate, weekDates, parseDate } from "../../domain/dates";
@@ -28,6 +34,7 @@ export default function Today() {
   const { colors } = useTheme();
   const { width, fontScale } = useWindowDimensions();
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
+  const [goalsExpandedDate, setGoalsExpandedDate] = useState<string | null>(null);
   const scheduled = todayHabits(habits, completions, today);
   const daily = scheduled.filter(
     (habit) => scheduleOn(habit, today)?.weeklyTarget === undefined,
@@ -39,23 +46,34 @@ export default function Today() {
   const done = new Set(
     completions.filter((c) => c.date === today).map((c) => c.habitId),
   );
-  const completed = scheduled.filter((h) => done.has(h.id)).length;
   const dailyCompleted = daily.filter((habit) => done.has(habit.id)).length;
-  const weeklyUnfinished = weekly.filter((habit) => !done.has(habit.id));
+  const weeklyProgress = new Map(weekly.map((habit) => [
+    habit.id,
+    weeklyGoalProgress(habit, completions, today),
+  ]));
+  const goalsMet = weekly.filter((habit) =>
+    isWeeklyGoalMet(weeklyProgress.get(habit.id)!) && !pausedUntil(habit, today),
+  );
+  const metIds = new Set(goalsMet.map((habit) => habit.id));
+  const goalsInProgress = weekly.filter((habit) => !metIds.has(habit.id) && !done.has(habit.id));
+  const weeklyCompleted = weekly.filter((habit) => !metIds.has(habit.id) && done.has(habit.id));
+  const completed = dailyCompleted + weeklyCompleted.length;
+  const goalsExpanded = goalsExpandedDate === today;
   const completedExpanded = expandedDate === today;
   const hasActiveHabits = habits.some((habit) => !habit.archived);
   function renderHabit(habit: (typeof scheduled)[number]) {
-    const weekly = scheduleOn(habit, today)?.weeklyTarget !== undefined;
-    const progress = weekly
-      ? weeklyGoalProgress(habit, completions, today)
-      : undefined;
+    const progress = weeklyProgress.get(habit.id);
+    const resume = pausedUntil(habit, today);
+    const subtitle = resume
+      ? `Paused until ${resumeDateLabel(resume, today)}`
+      : progress && weeklyGoalLabel(progress.completed, progress.target);
     return (
       <HabitRow
         key={habit.id}
         habit={habit}
         completed={done.has(habit.id)}
-        streak={weekly ? undefined : habitStats(habit, completions, today).currentStreak}
-        subtitle={progress && weeklyGoalLabel(progress.completed, progress.target)}
+        streak={progress || resume ? undefined : habitStats(habit, completions, today).currentStreak}
+        subtitle={subtitle}
         disabled={busy}
         onToggle={() =>
           void setCompletion(habit.id, today, !done.has(habit.id)).catch(
@@ -261,11 +279,21 @@ export default function Today() {
               </View>
             );
           })}
-          {!!weeklyUnfinished.length && (
+          {!!goalsInProgress.length && (
             <View style={{ gap: 12 }}>
               <Section title="Weekly goals" />
-              {weeklyUnfinished.map(renderHabit)}
+              {goalsInProgress.map(renderHabit)}
             </View>
+          )}
+          {!!goalsMet.length && (
+            <Disclosure
+              title="Goals met"
+              summary="Review or log extra days"
+              expanded={goalsExpanded}
+              onToggle={() => setGoalsExpandedDate(goalsExpanded ? null : today)}
+            >
+              {goalsExpanded && goalsMet.map(renderHabit)}
+            </Disclosure>
           )}
           {completed > 0 && (
             <Disclosure
@@ -287,8 +315,7 @@ export default function Today() {
                     </View>
                   );
                 })}
-              {completedExpanded &&
-                weekly.filter((habit) => done.has(habit.id)).map(renderHabit)}
+              {completedExpanded && weeklyCompleted.map(renderHabit)}
             </Disclosure>
           )}
         </View>
