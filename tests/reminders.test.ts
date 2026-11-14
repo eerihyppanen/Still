@@ -7,7 +7,7 @@ import {
   type ReminderPlan,
   type ScheduledReminder,
 } from "../src/notifications/reminders";
-import type { Habit } from "../src/domain/models";
+import type { Completion, Habit } from "../src/domain/models";
 const habit: Habit = {
   id: "h",
   name: "Read",
@@ -58,6 +58,42 @@ test("pausing cancels recurring reminders and schedules the first weekday back",
   assert.deepEqual([...scheduled.keys()], ["still:h:resume"]);
   await reconcileReminders(os, buildReminderPlan([paused], "2026-11-02", "UTC"), true);
   assert.deepEqual([...scheduled.keys()], ["still:h:2", "still:h:4"]);
+});
+test("reaching a weekly goal swaps daily reminders for one next Monday, and undo restores them", async () => {
+  const { os, scheduled } = driver();
+  const weekly: Habit = {
+    ...habit,
+    schedules: [{ effectiveDate: habit.createdDate, weekdays: [], weeklyTarget: 2 }],
+  };
+  const today = "2026-10-28";
+  const first: Completion = { habitId: habit.id, date: "2026-10-26" };
+  const met = [first, { habitId: habit.id, date: today }];
+  const makePlan = (date: string, records: Completion[]) =>
+    buildReminderPlan([weekly], date, "UTC", records);
+  await reconcileReminders(os, makePlan(today, [first]), true);
+  assert.deepEqual([...scheduled.keys()], ["still:h:daily"]);
+
+  const quiet = makePlan(today, met);
+  assert.deepEqual(quiet.map((plan) => plan.occurrenceDate), ["2026-11-02"]);
+  await reconcileReminders(os, quiet, true);
+  assert.deepEqual([...scheduled.keys()], ["still:h:resume"]);
+
+  await reconcileReminders(os, makePlan(today, [first]), true);
+  assert.deepEqual([...scheduled.keys()], ["still:h:daily"]);
+  assert.deepEqual(makePlan("2026-11-02", met).map((plan) => plan.id), ["still:h:daily"]);
+});
+
+test("a weekly goal met before a timed pause stays quiet after resuming in the same week", () => {
+  const paused: Habit = {
+    ...habit,
+    schedules: [{ effectiveDate: habit.createdDate, weekdays: [], weeklyTarget: 2 }],
+    periods: [
+      { startDate: habit.createdDate, endDate: "2026-10-28" },
+      { startDate: "2026-10-30", endDate: null },
+    ],
+  };
+  const records = ["2026-10-26", "2026-10-27"].map((date) => ({ habitId: habit.id, date }));
+  assert.equal(buildReminderPlan([paused], "2026-10-28", "UTC", records)[0]?.occurrenceDate, "2026-11-02");
 });
 test("weekday plans map Sunday to 1, preserve local time, and daily habits use one slot", () => {
   const plans = buildReminderPlan(

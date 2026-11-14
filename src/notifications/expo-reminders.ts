@@ -202,6 +202,7 @@ export function syncReminders(
         habits,
         today,
         Intl.DateTimeFormat().resolvedOptions().timeZone,
+        completions,
       );
       await reconcileReminders(driver, plans, true);
       return {

@@ -1,6 +1,12 @@
-import type { Habit } from "../domain/models";
-import { addDays } from "../domain/dates";
-import { isScheduled, pendingResumeDate, scheduleOn } from "../domain/habits";
+import type { Completion, Habit } from "../domain/models";
+import { addDays, weekDates } from "../domain/dates";
+import {
+  isScheduled,
+  isWeeklyGoalMet,
+  pendingResumeDate,
+  scheduleOn,
+  weeklyGoalProgress,
+} from "../domain/habits";
 export interface ReminderPlan {
   id: string;
   habitId: string;
@@ -25,6 +31,7 @@ export function buildReminderPlan(
   habits: Habit[],
   today: string,
   timeZone: string,
+  completions: Completion[] = [],
 ): ReminderPlan[] {
   return habits.flatMap((habit) => {
     if (habit.archived || !habit.reminderTime) return [];
@@ -34,9 +41,19 @@ export function buildReminderPlan(
     const [hour = 9, minute = 0] = habit.reminderTime.split(":").map(Number);
     const title = `${habit.emoji} ${habit.name}`;
     const body = "Check in when you’re done.";
-    if (resumeDate) {
+    let firstReminderDate = resumeDate;
+    if (
+      schedule.weeklyTarget !== undefined &&
+      isWeeklyGoalMet(weeklyGoalProgress(habit, completions, today))
+    ) {
+      const nextMonday = addDays(weekDates(today)[0]!, 7);
+      if (!firstReminderDate || firstReminderDate < nextMonday)
+        firstReminderDate = nextMonday;
+    }
+    // A dated alert can bridge a pause or the end of a week while Still is closed.
+    if (firstReminderDate) {
       for (let offset = 0; offset < 7; offset++) {
-        const occurrenceDate = addDays(resumeDate, offset);
+        const occurrenceDate = addDays(firstReminderDate, offset);
         if (isScheduled(habit, occurrenceDate))
           return [{
             id: `still:${habit.id}:resume`,

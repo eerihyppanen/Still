@@ -190,6 +190,17 @@ test("a snooze cannot roll yesterday's occurrence into tomorrow", async () => {
   );
   assert.equal(d.snoozes.size, 0);
 });
+
+test("a previously delivered reminder cannot snooze a weekly goal that is now met", async () => {
+  const { snapshot, driver, snoozes } = setup();
+  snapshot.habits = [{
+    ...habit,
+    schedules: [{ effectiveDate: habit.createdDate, weekdays: [], weeklyTarget: 1 }],
+  }];
+  snapshot.completions = [{ habitId: habit.id, date: "2026-10-29" }];
+  assert.equal(await runReminderAction({ ...action, action: "snooze" }, driver, now), "ignored");
+  assert.equal(snoozes.size, 0);
+});
 test("Snooze is a single ten-minute request and replay keeps its first deadline", async () => {
   const d = setup();
   const snooze = { ...action, action: "snooze" as const };

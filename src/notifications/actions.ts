@@ -1,5 +1,5 @@
 import { addDays, dateKey, parseDate } from "../domain/dates";
-import { isScheduled } from "../domain/habits";
+import { isScheduled, isWeeklyGoalMet, scheduleOn, weeklyGoalProgress } from "../domain/habits";
 import type { Habit, Snapshot } from "../domain/models";
 
 export const REMINDER_CATEGORY = "stillHabitActions";
@@ -125,6 +125,8 @@ export function snoozeIsCurrent(
     (data.reminderTime === undefined ||
       data.reminderTime === habit.reminderTime) &&
     isScheduled(habit, today) &&
+    (scheduleOn(habit, today)?.weeklyTarget === undefined ||
+      !isWeeklyGoalMet(weeklyGoalProgress(habit, snapshot.completions, today))) &&
     !snapshot.completions.some(
       (c) => c.habitId === habit.id && c.date === today,
     )

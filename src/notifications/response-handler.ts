@@ -8,7 +8,7 @@ import {
   SNOOZE_PREFIX,
   snoozeIsCurrent,
 } from "./actions";
-import { queuedNative } from "./expo-reminders";
+import { queuedNative, syncReminders } from "./expo-reminders";
 import { publishWidget } from "../widgets/sync";
 
 let actions: Promise<unknown> = Promise.resolve();
@@ -28,7 +28,7 @@ export function handleReminderResponse(response: unknown): Promise<boolean> {
   const result = actions.then(async () => {
     const repo = await getRepository();
     const n = await import("expo-notifications");
-    await runReminderAction(action, {
+    const outcome = await runReminderAction(action, {
       snapshot: () => repo.snapshot(),
       complete: async (id, date) => {
         await repo.completeReminder(
@@ -92,8 +92,20 @@ export function handleReminderResponse(response: unknown): Promise<boolean> {
         }),
     });
     await n.clearLastNotificationResponse();
+    const snapshot = await repo.snapshot();
+    const today = dateKey();
+    const snoozedFirstReminder =
+      outcome === "snoozed" && action.notificationId === `still:${action.habitId}:resume`;
+    if (outcome === "done" || snoozedFirstReminder) {
+      await syncReminders(
+        snapshot.habits,
+        snapshot.settings.remindersEnabled,
+        today,
+        snapshot.completions,
+      );
+    }
     try {
-      publishWidget(await repo.snapshot(), dateKey());
+      publishWidget(snapshot, today);
     } catch {
       /* Widget refresh is separate from the saved check-in. */
     }
