@@ -95,6 +95,44 @@ test("a weekly goal met before a timed pause stays quiet after resuming in the s
   const records = ["2026-10-26", "2026-10-27"].map((date) => ({ habitId: habit.id, date }));
   assert.equal(buildReminderPlan([paused], "2026-10-28", "UTC", records)[0]?.occurrenceDate, "2026-11-02");
 });
+
+test("Android defers each recurring weekday until a pause ends", async () => {
+  const paused: Habit = {
+    ...habit,
+    periods: [
+      { startDate: habit.createdDate, endDate: "2026-10-27" },
+      { startDate: "2026-11-03", endDate: null },
+    ],
+  };
+  const { os, scheduled } = driver();
+  const old = buildReminderPlan([paused], "2026-10-27", "UTC");
+  await reconcileReminders(os, old, true);
+  const plans = buildReminderPlan([paused], "2026-10-27", "UTC", [], true);
+  assert.deepEqual(plans.map(({ id, startsOn, weekday, occurrenceDate }) =>
+    [id, startsOn, weekday, occurrenceDate]), [
+    ["still:h:2", "2026-11-03", 2, undefined],
+    ["still:h:4", "2026-11-03", 4, undefined],
+  ]);
+  await reconcileReminders(os, plans, true);
+  assert.deepEqual([...scheduled.keys()], ["still:h:2", "still:h:4"]);
+});
+
+test("Android quiets a met weekly goal but keeps its daily recurrence from Monday", () => {
+  const weekly: Habit = {
+    ...habit,
+    schedules: [{ effectiveDate: habit.createdDate, weekdays: [], weeklyTarget: 1 }],
+  };
+  const today = "2026-10-28";
+  const records = [{ habitId: habit.id, date: today }];
+  const [deferred] = buildReminderPlan([weekly], today, "UTC", records, true);
+  assert.equal(deferred?.id, "still:h:daily");
+  assert.equal(deferred?.weekday, null);
+  assert.equal(deferred?.startsOn, "2026-11-02");
+  assert.equal(deferred?.occurrenceDate, undefined);
+  const [undone] = buildReminderPlan([weekly], today, "UTC", [], true);
+  assert.equal(undone?.startsOn, undefined);
+  assert.notEqual(undone?.signature, deferred?.signature);
+});
 test("weekday plans map Sunday to 1, preserve local time, and daily habits use one slot", () => {
   const plans = buildReminderPlan(
     [

@@ -1,6 +1,13 @@
 # Verification record
 
-Dates: October 27–November 14, 2026.
+Dates: October 27–November 16, 2026.
+
+## Android reminder recurrence and widget ordering — November 16, 2026
+
+- `npm run check` passed TypeScript, Expo lint, and 104 tests. Calendar tests passed in all four test time zones. The signed Android build passed release assembly and lint.
+- On the Pixel 7 emulator, two test habits delivered twice without reopening Still or acting on either notification. The paused habit delivered on the first two scheduled days back. The finished weekly goal stayed quiet until Monday and delivered again on Tuesday. A pending alarm shifted to the same local time when the emulator changed time zones with Still closed.
+- Turning reminders off removed both pending alarms from Android's AlarmManager.
+- The widget regression verifies that met weekly goals cannot fill all three rows ahead of an unfinished daily habit. Unfinished daily habits and weekly goals appear first, with completed weekly goals marked as met.
 
 ## Weekly goal and pause follow-up — November 14, 2026
 

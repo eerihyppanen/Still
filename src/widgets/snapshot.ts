@@ -2,7 +2,7 @@ import type { Snapshot } from "../domain/models";
 import { todayHabits } from "../domain/history";
 import { groupTodayHabits } from "../domain/groups";
 import { formatDate } from "../domain/dates";
-import { scheduleOn, weeklyGoalProgress } from "../domain/habits";
+import { isWeeklyGoalMet, scheduleOn, weeklyGoalProgress } from "../domain/habits";
 
 export interface TodayWidgetSnapshot {
   dateLabel: string;
@@ -25,9 +25,14 @@ export function buildWidgetSnapshot(
     .map((habit) => [habit.id, weeklyGoalProgress(habit, snapshot.completions, today)]));
   const daily = scheduled.filter((habit) => !weekly.has(habit.id));
   const completed = daily.filter((habit) => done.has(habit.id)).length;
+  const met = new Set(
+    [...weekly].filter(([, goal]) => isWeeklyGoalMet(goal)).map(([id]) => id),
+  );
   const ordered = [
-    ...scheduled.filter((habit) => !done.has(habit.id)),
-    ...scheduled.filter((habit) => done.has(habit.id)),
+    ...daily.filter((habit) => !done.has(habit.id)),
+    ...scheduled.filter((habit) => weekly.has(habit.id) && !met.has(habit.id) && !done.has(habit.id)),
+    ...scheduled.filter((habit) => met.has(habit.id)),
+    ...scheduled.filter((habit) => done.has(habit.id) && !met.has(habit.id)),
   ];
   return {
     dateLabel: formatDate(today, {
@@ -43,7 +48,7 @@ export function buildWidgetSnapshot(
       .map((habit) => {
         const goal = weekly.get(habit.id);
         const name = habit.name.length > 35 ? habit.name.slice(0, 34) + "…" : habit.name;
-        return `${done.has(habit.id) ? "✓" : "☐"} ${habit.emoji} ${name}${goal ? ` · ${goal.completed}/${goal.target} this week` : ""}`;
+        return `${done.has(habit.id) || met.has(habit.id) ? "✓" : "☐"} ${habit.emoji} ${name}${goal ? ` · ${goal.completed}/${goal.target} this week` : ""}`;
       }),
     more: scheduled.length > 3 ? `+${scheduled.length - 3} more in Still` : "",
   };

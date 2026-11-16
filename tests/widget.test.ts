@@ -65,3 +65,20 @@ test("widget bounds its list and names without changing the habit's saved name",
   assert.ok(value.rows.every((row) => row.length < 55));
   assert.equal(habits[0]!.name.length, 80);
 });
+
+test("met weekly goals cannot crowd habits that still need a check-in out of the widget", () => {
+  const weekly = (id: string): Habit => ({
+    ...habit(id, "morning"),
+    schedules: [{ effectiveDate: "2026-10-29", weekdays: [], weeklyTarget: 1 }],
+  });
+  const value = buildWidgetSnapshot({
+    ...snapshot,
+    habits: [weekly("met1"), weekly("met2"), weekly("met3"), weekly("open"), habit("daily")],
+    completions: ["met1", "met2", "met3"].map((id) => ({ habitId: id, date: "2026-10-29" })),
+  }, "2026-10-30");
+  assert.deepEqual(value.rows, [
+    "☐ 🌱 Habit daily",
+    "☐ 🌱 Habit open · 0/1 this week",
+    "✓ 🌱 Habit met1 · 1/1 this week",
+  ]);
+});

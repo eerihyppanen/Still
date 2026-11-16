@@ -1,4 +1,6 @@
 import { Platform } from "react-native";
+import { requireOptionalNativeModule } from "expo";
+import type { NotificationContentInput } from "expo-notifications";
 import type { Completion, Habit } from "../domain/models";
 import { parseDate } from "../domain/dates";
 import {
@@ -23,6 +25,21 @@ export interface NotificationStatus {
 }
 let queue: Promise<unknown> = Promise.resolve();
 let initialized = false;
+type DeferredReminderScheduler = {
+  scheduleDeferred(
+    id: string,
+    content: NotificationContentInput,
+    startsOn: string,
+    hour: number,
+    minute: number,
+    weekday: number | null,
+  ): Promise<void>;
+};
+const deferredScheduler =
+  Platform.OS === "android"
+    ? requireOptionalNativeModule<DeferredReminderScheduler>("StillReminders")
+    : null;
+export const supportsDeferredReminders = deferredScheduler !== null;
 async function nativeNotifications() {
   const notifications = await import("expo-notifications");
   if (!initialized) {
@@ -110,24 +127,30 @@ export function syncReminders(
           })),
         cancel: (id) => n.cancelScheduledNotificationAsync(id),
         schedule: async (plan) => {
+          const content: NotificationContentInput = {
+            title: plan.title,
+            body: plan.body,
+            sound: false,
+            categoryIdentifier: REMINDER_CATEGORY,
+            data: {
+              habitId: plan.habitId,
+              signature: plan.signature,
+              reminderTime: habits.find((h) => h.id === plan.habitId)?.reminderTime,
+              scheduleWeekday: plan.weekday,
+              ...(plan.occurrenceDate ? { occurrenceDate: plan.occurrenceDate } : {}),
+            },
+          };
+          if (plan.startsOn && deferredScheduler) {
+            await deferredScheduler.scheduleDeferred(
+              plan.id, content, plan.startsOn, plan.hour, plan.minute, plan.weekday,
+            );
+            return;
+          }
           const date = plan.occurrenceDate ? parseDate(plan.occurrenceDate) : undefined;
           date?.setHours(plan.hour, plan.minute, 0, 0);
           await n.scheduleNotificationAsync({
             identifier: plan.id,
-            content: {
-              title: plan.title,
-              body: plan.body,
-              sound: false,
-              categoryIdentifier: REMINDER_CATEGORY,
-              data: {
-                habitId: plan.habitId,
-                signature: plan.signature,
-                reminderTime: habits.find((h) => h.id === plan.habitId)
-                  ?.reminderTime,
-                scheduleWeekday: plan.weekday,
-                ...(plan.occurrenceDate ? { occurrenceDate: plan.occurrenceDate } : {}),
-              },
-            },
+            content,
             trigger: date
               ? { type: n.SchedulableTriggerInputTypes.DATE, date, channelId: "habits" }
               : plan.weekday === null
@@ -203,6 +226,7 @@ export function syncReminders(
         today,
         Intl.DateTimeFormat().resolvedOptions().timeZone,
         completions,
+        supportsDeferredReminders,
       );
       await reconcileReminders(driver, plans, true);
       return {

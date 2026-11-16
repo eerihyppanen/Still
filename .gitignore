@@ -52,6 +52,7 @@ credentials.json
 # generated native folders
 /ios
 /android
+/modules/still-reminders/android/build/
 
 # Local installable delivery builds
 /releases/*.apk

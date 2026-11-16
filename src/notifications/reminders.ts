@@ -16,6 +16,7 @@ export interface ReminderPlan {
   minute: number;
   weekday: number | null;
   occurrenceDate?: string;
+  startsOn?: string;
   signature: string;
 }
 export interface ScheduledReminder {
@@ -32,6 +33,7 @@ export function buildReminderPlan(
   today: string,
   timeZone: string,
   completions: Completion[] = [],
+  canDeferRecurring = false,
 ): ReminderPlan[] {
   return habits.flatMap((habit) => {
     if (habit.archived || !habit.reminderTime) return [];
@@ -50,8 +52,8 @@ export function buildReminderPlan(
       if (!firstReminderDate || firstReminderDate < nextMonday)
         firstReminderDate = nextMonday;
     }
-    // A dated alert can bridge a pause or the end of a week while Still is closed.
-    if (firstReminderDate) {
+    // Use a dated alert when the platform cannot delay a recurring reminder.
+    if (firstReminderDate && !canDeferRecurring) {
       for (let offset = 0; offset < 7; offset++) {
         const occurrenceDate = addDays(firstReminderDate, offset);
         if (isScheduled(habit, occurrenceDate))
@@ -78,6 +80,7 @@ export function buildReminderPlan(
         weekday,
         hour,
         minute,
+        ...(firstReminderDate ? { startsOn: firstReminderDate } : {}),
         signature: JSON.stringify([
           "actions-v2",
           title,
@@ -86,6 +89,7 @@ export function buildReminderPlan(
           hour,
           minute,
           timeZone,
+          ...(firstReminderDate ? [firstReminderDate] : []),
         ]),
       };
     });

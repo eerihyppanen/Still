@@ -5,6 +5,7 @@ import { addDays, dateKey, parseDate } from "../domain/dates";
 import { pausedUntil, pendingResumeDate } from "../domain/habits";
 import { resumeDateLabel } from "../domain/labels";
 import type { DateKey, Habit } from "../domain/models";
+import { supportsDeferredReminders } from "../notifications/expo-reminders";
 import { useApp } from "../state/AppProvider";
 import { useTheme } from "../theme/ThemeProvider";
 import { Button, Card, Txt } from "./ui";
@@ -105,7 +106,9 @@ export function PauseHabit({ habit }: { habit: Habit }) {
           </Txt>
           {habit.reminderTime && (
             <Txt size={13} muted>
-              Still schedules your first reminder back. Open the app after the pause to restore recurring reminders.
+              {supportsDeferredReminders
+                ? "Reminders resume on the first scheduled day back."
+                : "Still schedules your first reminder back. Open the app after the pause to restore recurring reminders."}
             </Txt>
           )}
           <Button
