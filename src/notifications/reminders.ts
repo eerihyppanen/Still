@@ -34,6 +34,7 @@ export function buildReminderPlan(
   timeZone: string,
   completions: Completion[] = [],
   canDeferRecurring = false,
+  now = new Date(),
 ): ReminderPlan[] {
   return habits.flatMap((habit) => {
     if (habit.archived || !habit.reminderTime) return [];
@@ -43,6 +44,26 @@ export function buildReminderPlan(
     const [hour = 9, minute = 0] = habit.reminderTime.split(":").map(Number);
     const title = `${habit.emoji} ${habit.name}`;
     const body = "Check in when you’re done.";
+    const beforePause: ReminderPlan[] = [];
+    if (resumeDate) {
+      // Travelling back across midnight can expose active dates before a saved pause.
+      for (const period of habit.periods) {
+        if (!period.endDate || period.endDate <= today) continue;
+        const start = period.startDate > today ? period.startDate : today;
+        for (let date = start; date < period.endDate && date < resumeDate; date = addDays(date, 1)) {
+          if (date === today && hour * 60 + minute <= now.getHours() * 60 + now.getMinutes()) continue;
+          if (!isScheduled(habit, date)) continue;
+          if (scheduleOn(habit, date)?.weeklyTarget !== undefined &&
+              isWeeklyGoalMet(weeklyGoalProgress(habit, completions, date))) continue;
+          beforePause.push({
+            id: `still:${habit.id}:before-pause:${date}`,
+            habitId: habit.id, title, body, hour, minute, weekday: null, occurrenceDate: date,
+            signature: JSON.stringify(["before-pause", title, body, date, hour, minute, timeZone]),
+          });
+          if (beforePause.length > 60) return beforePause; // Reconciliation reports the slot limit.
+        }
+      }
+    }
     let firstReminderDate = resumeDate;
     if (
       schedule.weeklyTarget !== undefined &&
@@ -57,20 +78,20 @@ export function buildReminderPlan(
       for (let offset = 0; offset < 7; offset++) {
         const occurrenceDate = addDays(firstReminderDate, offset);
         if (isScheduled(habit, occurrenceDate))
-          return [{
+          return [...beforePause, {
             id: `still:${habit.id}:resume`,
             habitId: habit.id,
             title, body, weekday: null, hour, minute, occurrenceDate,
             signature: JSON.stringify(["resume-v1", title, body, occurrenceDate, hour, minute, timeZone]),
           }];
       }
-      return [];
+      return beforePause;
     }
     const days =
       schedule.weeklyTarget !== undefined || schedule.weekdays.length === 7
         ? [null]
         : [...schedule.weekdays].sort((a, b) => a - b).map((day) => day + 1);
-    return days.map((weekday) => {
+    return beforePause.concat(days.map((weekday) => {
       const id = `still:${habit.id}:${weekday ?? "daily"}`;
       return {
         id,
@@ -92,7 +113,7 @@ export function buildReminderPlan(
           ...(firstReminderDate ? [firstReminderDate] : []),
         ]),
       };
-    });
+    }));
   });
 }
 export async function reconcileReminders(

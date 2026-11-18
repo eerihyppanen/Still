@@ -20,7 +20,7 @@ npx expo start --dev-client
 
 Keep the Android package name and signing key when distributing updates. Install an update over the current app to keep its local history. A standalone build runs with its bundled code and data on the device.
 
-On Windows, make sure the JDK and Android SDK are available to Gradle. If native compilation hits Ninja’s path limit, set `${env:ORG_GRADLE_PROJECT_expo.android.cmakeObjectPathMax} = '240'` in PowerShell for that build terminal. If the emulator cannot reach an existing localhost Metro server, the tested IPv4 setup is:
+On Windows, make sure the JDK and Android SDK are available to Gradle. For the 1.4.1 release build, passing `-Pexpo.android.cmakeObjectPathMax=255` to Gradle resolved Ninja’s object-file path error. To connect an emulator to an existing localhost Metro server over IPv4, run the following commands.
 
 ```powershell
 node --dns-result-order=ipv4first .\node_modules\expo\bin\cli start --dev-client --localhost --port 8081 --max-workers 2

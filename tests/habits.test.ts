@@ -22,6 +22,19 @@ const habit: Habit = {
 };
 const done = (...dates: string[]): Completion[] =>
   dates.map((date) => ({ habitId: "h", date }));
+test("weekly goals end the current streak and preserve the historical longest", () => {
+  const switched: Habit = { ...habit, schedules: [
+    ...habit.schedules,
+    { effectiveDate: "2026-10-22", weekdays: [], weeklyTarget: 2 },
+    { effectiveDate: "2026-11-16", weekdays: [1, 3, 5] },
+  ] };
+  const records = done("2026-10-19", "2026-10-21", "2026-11-16");
+  for (const [date, current] of [["2026-11-12", 0], ["2026-11-16", 1]] as const) {
+    const stats = habitStats(switched, records, date);
+    assert.equal(stats.currentStreak, current);
+    assert.equal(stats.longestStreak, 2);
+  }
+});
 test("scheduled weekdays exclude days before creation and rest days", () => {
   assert.equal(isScheduled(habit, "2026-10-16"), false);
   assert.equal(isScheduled(habit, "2026-10-20"), false);

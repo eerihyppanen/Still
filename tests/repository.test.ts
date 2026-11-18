@@ -79,7 +79,9 @@ test("a version 1 database upgrades with fixed schedules and check-ins intact", 
       { effectiveDate: "2026-10-26", weekdays: [1, 3] },
       { effectiveDate: "2026-10-27", weekdays: [], weeklyTarget: 3 },
     ]);
-    assert.equal(habitStats(habit, before.completions, "2026-10-27").currentStreak, 1);
+    const stats = habitStats(habit, before.completions, "2026-10-27");
+    assert.equal(stats.currentStreak, 0);
+    assert.equal(stats.longestStreak, 1);
   } finally {
     close();
   }

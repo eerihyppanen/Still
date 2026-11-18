@@ -34,7 +34,7 @@ npm run web
 
 With an Android emulator running, use `npm run android` for the native app. Android is the tested target for reminders and the home-screen widget.
 
-- Look under **Releases** on GitHub for a standalone Android APK. Install updates over your current copy to keep local history.
+- Download the standalone APK from the [latest Android release](https://github.com/eerihyppanen/Still/releases/latest). Install it over your current copy to keep local history. See the [Android install guide](./releases/README.md).
 - [Developer guide](./docs/running-still.md) covers native builds, checks, and project structure.
 - [Verification record](./VERIFICATION.md) documents the automated tests and Android emulator checks.
 

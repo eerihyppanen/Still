@@ -20,6 +20,20 @@ const habit: Habit = {
   schedules: [{ effectiveDate: "2026-10-26", weekdays: [1, 3] }],
   periods: [{ startDate: "2026-10-26", endDate: null }],
 };
+test("moving back before a pause preserves eligible reminders on either side of the gap", () => {
+  const paused: Habit = { ...habit, periods: [
+    { startDate: habit.createdDate, endDate: "2026-10-29" },
+    { startDate: "2026-11-04", endDate: null },
+  ] };
+  for (const native of [true, false]) {
+    const plans = buildReminderPlan([paused], "2026-10-26", "UTC", [], native, new Date(2026, 9, 26, 8));
+    assert.deepEqual(plans.filter(p => p.occurrenceDate && p.occurrenceDate < "2026-11-04")
+      .map(p => p.occurrenceDate), ["2026-10-26", "2026-10-28"]);
+    assert.ok(plans.some(p => (p.startsOn ?? p.occurrenceDate) === "2026-11-04"));
+    const later = buildReminderPlan([paused], "2026-10-26", "UTC", [], native, new Date(2026, 9, 26, 10));
+    assert.ok(!later.some(p => p.occurrenceDate === "2026-10-26"));
+  }
+});
 function driver() {
   const scheduled = new Map<string, ScheduledReminder>();
   let fail = false;

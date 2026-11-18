@@ -47,15 +47,17 @@ export function habitStats(
   today: DateKey,
 ) {
   const completed = completionSet(records, habit.id, today);
-  const eligible = datesBetween(habit.createdDate, today).filter(
-    (date) =>
-      scheduleOn(habit, date)?.weeklyTarget === undefined &&
-      (isScheduled(habit, date) || completed.has(date)),
-  );
+  let eligibleDays = 0;
   let run = 0,
     longestStreak = 0,
     totalCompleted = 0;
-  for (const date of eligible) {
+  for (const date of datesBetween(habit.createdDate, today)) {
+    if (scheduleOn(habit, date)?.weeklyTarget !== undefined) {
+      run = 0;
+      continue;
+    }
+    if (!completed.has(date) && !isScheduled(habit, date)) continue;
+    eligibleDays++;
     if (completed.has(date)) {
       run++;
       totalCompleted++;
@@ -66,8 +68,8 @@ export function habitStats(
     currentStreak: run,
     longestStreak,
     totalCompleted: completed.size,
-    completionRate: eligible.length
-      ? Math.round((totalCompleted / eligible.length) * 100)
+    completionRate: eligibleDays
+      ? Math.round((totalCompleted / eligibleDays) * 100)
       : 0,
   };
 }

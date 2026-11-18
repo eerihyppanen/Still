@@ -1,6 +1,13 @@
 # Verification record
 
-Dates: October 27–November 16, 2026.
+Dates: October 27–November 18, 2026.
+
+## Android 1.4.1 — November 18, 2026
+
+- TypeScript, Expo lint, and all 106 tests passed. All 22 calendar tests passed in each of the four configured time zones.
+- Regression tests cover switching to a weekly goal and back, retaining the longest historical streak, and scheduling on eligible dates before a saved pause when the local date moves backward. Both reminder adapters' plans were checked, including a same-day reminder whose time has already passed.
+- Android release lint and assembly passed. The APK has version code 7, matches the signing certificate of the published 1.4.0 APK, supports arm64-v8a and x86_64, and has no internet or network-state permission.
+- A disposable Pixel 7 emulator installed 1.4.1 directly over the previous release. A habit and its completed check-in survived the update. The [release checksums](./releases/SHA256SUMS.txt) identify the tested APK.
 
 ## Android reminder recurrence and widget ordering — November 16, 2026
 
