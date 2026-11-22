@@ -1,6 +1,13 @@
 # Verification record
 
-Dates: October 27–November 18, 2026.
+Dates: October 27–November 22, 2026.
+
+## Android 1.4.2 — November 22, 2026
+
+- TypeScript, Expo lint, and all 106 project tests passed. All 22 calendar tests passed in each of the four configured time zones.
+- Settings component checks with simulated failures verified that **Retry test reminder check** rechecks notification state and reconnects the listener. With reminders off, it restored **Clear test notification** for a delivered test.
+- Android release lint and assembly passed. The APK has version code 8, matches the signing certificate of 1.4.1, supports arm64-v8a and x86_64, and has no internet or network-state permission.
+- A disposable Pixel 7 emulator installed 1.4.2 over the published 1.4.1 APK. Its saved habit and check-in survived, and the Settings footer showed 1.4.2. A test notification arrived and was removed from the Android notification tray using **Clear test notification** after reminders were turned off. The [release checksums](./releases/SHA256SUMS.txt) identify the tested APK.
 
 ## Android 1.4.1 — November 18, 2026
 
