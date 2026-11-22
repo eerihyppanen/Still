@@ -25,6 +25,8 @@ export function TestReminder({
   const [actionNotice, setActionNotice] = useState("");
   const [statusCheckFailed, setStatusCheckFailed] = useState(false);
   const [listenerSetupFailed, setListenerSetupFailed] = useState(false);
+  const [retryAttempt, setRetryAttempt] = useState(0);
+  const [completedRetryAttempt, setCompletedRetryAttempt] = useState(0);
   useEffect(() => {
     let active = true;
     let removeListener = () => {};
@@ -40,8 +42,8 @@ export function TestReminder({
       }
     };
     // A reminder sync can cancel a scheduled test while leaving a delivered one.
-    void refresh();
-    void subscribeToTestNotification(() => {
+    const statusCheck = refresh();
+    const listenerSetup = subscribeToTestNotification(() => {
       if (active) {
         setActionNotice("");
         setStatus("delivered");
@@ -58,6 +60,9 @@ export function TestReminder({
       .catch(() => {
         if (active) setListenerSetupFailed(true);
       });
+    void Promise.all([statusCheck, listenerSetup]).then(() => {
+      if (active) setCompletedRetryAttempt(retryAttempt);
+    });
     const foreground = AppState.addEventListener("change", (state) => {
       if (state === "active") void refresh();
     });
@@ -66,7 +71,7 @@ export function TestReminder({
       removeListener();
       foreground.remove();
     };
-  }, [notificationStatus]);
+  }, [notificationStatus, retryAttempt]);
 
   async function act(cancel: boolean) {
     setPending(true);
@@ -94,16 +99,20 @@ export function TestReminder({
       setPending(false);
     }
   }
+  const warning = statusCheckFailed
+    ? "Could not check the test reminder."
+    : listenerSetupFailed
+      ? "Could not listen for the test reminder."
+      : "";
   const statusMessage =
     actionNotice ||
-    (statusCheckFailed && "Could not check the test reminder.") ||
-    (listenerSetupFailed && "Could not listen for the test reminder.") ||
-    (status === "pending"
-      ? "Test reminder scheduled. Your phone may delay delivery."
-      : status === "delivered"
-        ? "Test reminder received."
-        : "");
-  if (!canSend && !statusMessage) return null;
+    (!warning &&
+      (status === "pending"
+        ? "Test reminder scheduled. Your phone may delay delivery."
+        : status === "delivered"
+          ? "Test reminder received."
+          : ""));
+  if (!canSend && !statusMessage && !warning) return null;
 
   return (
     <View style={{ gap: 8, alignItems: "flex-start" }}>
@@ -132,6 +141,20 @@ export function TestReminder({
         <Txt size={13} muted accessibilityLiveRegion="polite">
           {statusMessage}
         </Txt>
+      ) : null}
+      {warning ? (
+        <>
+          <Txt size={13} muted accessibilityLiveRegion="polite">
+            {warning}
+          </Txt>
+          <Button
+            title="Retry test reminder check"
+            variant="secondary"
+            disabled={busy || pending}
+            loading={retryAttempt !== completedRetryAttempt}
+            onPress={() => setRetryAttempt((attempt) => attempt + 1)}
+          />
+        </>
       ) : null}
     </View>
   );
