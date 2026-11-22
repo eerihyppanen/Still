@@ -6,10 +6,20 @@ import {
   cancelTestNotification,
   getTestNotificationState,
   subscribeToTestNotification,
+  type NotificationStatus,
   type TestNotificationState,
 } from "../notifications/expo-reminders";
 
-export function TestReminder({ busy }: { busy: boolean }) {
+export function TestReminder({
+  remindersEnabled,
+  notificationStatus,
+  busy,
+}: {
+  remindersEnabled: boolean;
+  notificationStatus: NotificationStatus;
+  busy: boolean;
+}) {
+  const canSend = remindersEnabled && notificationStatus.state === "ready";
   const [status, setStatus] = useState<TestNotificationState>("idle");
   const [pending, setPending] = useState(false);
   const [notice, setNotice] = useState("");
@@ -24,6 +34,7 @@ export function TestReminder({ busy }: { busy: boolean }) {
         if (active) setNotice("Could not check the test reminder. Try again.");
       }
     };
+    // A reminder sync can cancel a scheduled test while leaving a delivered one.
     void refresh();
     void subscribeToTestNotification(() => {
       if (active) {
@@ -49,7 +60,7 @@ export function TestReminder({ busy }: { busy: boolean }) {
       removeListener();
       foreground.remove();
     };
-  }, []);
+  }, [notificationStatus]);
 
   async function act(cancel: boolean) {
     setPending(true);
@@ -84,15 +95,19 @@ export function TestReminder({ busy }: { busy: boolean }) {
       : status === "delivered"
         ? "Test reminder received."
         : "");
+  if (!canSend && !statusMessage) return null;
+
   return (
     <View style={{ gap: 8, alignItems: "flex-start" }}>
-      <Button
-        title="Send test reminder"
-        variant="secondary"
-        disabled={busy || status === "pending"}
-        loading={pending}
-        onPress={() => void act(false)}
-      />
+      {canSend && (
+        <Button
+          title="Send test reminder"
+          variant="secondary"
+          disabled={busy || status === "pending"}
+          loading={pending}
+          onPress={() => void act(false)}
+        />
+      )}
       {status !== "idle" && (
         <Button
           title={

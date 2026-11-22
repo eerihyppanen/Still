@@ -70,11 +70,13 @@ export function NotificationSettings() {
           onPress={() => void app.reload()}
         />
       )}
-      {Platform.OS !== "web" &&
-        app.settings.remindersEnabled &&
-        app.notificationStatus.state === "ready" && (
-          <TestReminder busy={pending || app.busy} />
-        )}
+      {Platform.OS !== "web" && (
+        <TestReminder
+          remindersEnabled={app.settings.remindersEnabled}
+          notificationStatus={app.notificationStatus}
+          busy={pending || app.busy}
+        />
+      )}
     </Card>
   );
 }
