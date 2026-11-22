@@ -21,7 +21,6 @@ export default function Settings() {
   const archived = app.habits.filter((h) => h.archived);
   const version = Constants.expoConfig?.version;
   const [archivesExpanded, setArchivesExpanded] = useState(false);
-  const [aboutExpanded, setAboutExpanded] = useState(false);
   return (
     <Screen contentContainerStyle={{ gap: 14 }}>
       <Heading title="Settings" />
@@ -86,22 +85,11 @@ export default function Settings() {
           </Txt>
         )}
       </Disclosure>
-      <Disclosure
-        title="About Still"
-        summary={
-          version
-            ? `Version ${version} · Stored on this device`
-            : "Stored on this device"
-        }
-        expanded={aboutExpanded}
-        onToggle={() => setAboutExpanded((value) => !value)}
-      >
-        <Txt size={14} muted>
-          Works without internet. No account or cloud sync. The Android update
-          excludes your app data from automatic backup and phone transfers.
-          Uninstalling or losing this phone can lose your history.
+      {version && (
+        <Txt size={13} muted style={{ textAlign: "center" }}>
+          {`Still ${version}`}
         </Txt>
-      </Disclosure>
+      )}
     </Screen>
   );
 }

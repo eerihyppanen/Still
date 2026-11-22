@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AppState, Platform, View } from "react-native";
+import { AppState, View } from "react-native";
 import { Button, Txt } from "./ui";
 import {
   sendTestNotification,
@@ -9,18 +9,11 @@ import {
   type TestNotificationState,
 } from "../notifications/expo-reminders";
 
-export function TestReminder({
-  enabled,
-  busy,
-}: {
-  enabled: boolean;
-  busy: boolean;
-}) {
+export function TestReminder({ busy }: { busy: boolean }) {
   const [status, setStatus] = useState<TestNotificationState>("idle");
   const [pending, setPending] = useState(false);
   const [notice, setNotice] = useState("");
   useEffect(() => {
-    if (Platform.OS === "web") return;
     let active = true;
     let removeListener = () => {};
     const refresh = async () => {
@@ -56,7 +49,7 @@ export function TestReminder({
       removeListener();
       foreground.remove();
     };
-  }, [enabled]);
+  }, []);
 
   async function act(cancel: boolean) {
     setPending(true);
@@ -84,13 +77,19 @@ export function TestReminder({
       setPending(false);
     }
   }
-  if (Platform.OS === "web") return null;
+  const statusMessage =
+    notice ||
+    (status === "pending"
+      ? "Test reminder scheduled. Your phone may delay delivery."
+      : status === "delivered"
+        ? "Test reminder received."
+        : "");
   return (
-    <View style={{ gap: 8 }}>
+    <View style={{ gap: 8, alignItems: "flex-start" }}>
       <Button
-        title="Send a test reminder"
+        title="Send test reminder"
         variant="secondary"
-        disabled={!enabled || busy || status === "pending"}
+        disabled={busy || status === "pending"}
         loading={pending}
         onPress={() => void act(false)}
       />
@@ -106,16 +105,11 @@ export function TestReminder({
           onPress={() => void act(true)}
         />
       )}
-      <Txt size={13} muted accessibilityLiveRegion="polite">
-        {notice ||
-          (status === "pending"
-            ? "Test reminder scheduled for about five seconds from now. Your phone may delay delivery."
-            : status === "delivered"
-              ? "Your test reminder was received."
-              : enabled
-                ? "Send a test to check notification delivery."
-                : "Enable reminders to send a test notification.")}
-      </Txt>
+      {statusMessage ? (
+        <Txt size={13} muted accessibilityLiveRegion="polite">
+          {statusMessage}
+        </Txt>
+      ) : null}
     </View>
   );
 }
