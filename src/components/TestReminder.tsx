@@ -22,35 +22,41 @@ export function TestReminder({
   const canSend = remindersEnabled && notificationStatus.state === "ready";
   const [status, setStatus] = useState<TestNotificationState>("idle");
   const [pending, setPending] = useState(false);
-  const [notice, setNotice] = useState("");
+  const [actionNotice, setActionNotice] = useState("");
+  const [statusCheckFailed, setStatusCheckFailed] = useState(false);
+  const [listenerSetupFailed, setListenerSetupFailed] = useState(false);
   useEffect(() => {
     let active = true;
     let removeListener = () => {};
     const refresh = async () => {
       try {
         const state = await getTestNotificationState();
-        if (active) setStatus(state);
+        if (active) {
+          setStatus(state);
+          setStatusCheckFailed(false);
+        }
       } catch {
-        if (active) setNotice("Could not check the test reminder. Try again.");
+        if (active) setStatusCheckFailed(true);
       }
     };
     // A reminder sync can cancel a scheduled test while leaving a delivered one.
     void refresh();
     void subscribeToTestNotification(() => {
       if (active) {
-        setNotice("");
+        setActionNotice("");
         setStatus("delivered");
       }
     })
       .then((remove) => {
-        if (active) removeListener = remove;
-        else remove();
+        if (active) {
+          removeListener = remove;
+          setListenerSetupFailed(false);
+        } else {
+          remove();
+        }
       })
       .catch(() => {
-        if (active)
-          setNotice(
-            "Could not listen for the test reminder. Reopen Settings to retry.",
-          );
+        if (active) setListenerSetupFailed(true);
       });
     const foreground = AppState.addEventListener("change", (state) => {
       if (state === "active") void refresh();
@@ -64,11 +70,11 @@ export function TestReminder({
 
   async function act(cancel: boolean) {
     setPending(true);
-    setNotice("");
+    setActionNotice("");
     try {
       if (cancel) {
         await cancelTestNotification();
-        setNotice(
+        setActionNotice(
           status === "delivered"
             ? "Test notification cleared."
             : "Test reminder cancelled.",
@@ -79,7 +85,7 @@ export function TestReminder({
         setStatus("pending");
       }
     } catch (error) {
-      setNotice(
+      setActionNotice(
         error instanceof Error
           ? error.message
           : "The test reminder could not be updated.",
@@ -89,7 +95,9 @@ export function TestReminder({
     }
   }
   const statusMessage =
-    notice ||
+    actionNotice ||
+    (statusCheckFailed && "Could not check the test reminder.") ||
+    (listenerSetupFailed && "Could not listen for the test reminder.") ||
     (status === "pending"
       ? "Test reminder scheduled. Your phone may delay delivery."
       : status === "delivered"
