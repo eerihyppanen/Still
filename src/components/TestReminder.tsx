@@ -1,53 +1,68 @@
 import { useEffect, useState } from "react";
-import { AppState, Platform, View } from "react-native";
+import { AppState, View } from "react-native";
 import { Button, Txt } from "./ui";
 import {
   sendTestNotification,
   cancelTestNotification,
   getTestNotificationState,
   subscribeToTestNotification,
+  type NotificationStatus,
   type TestNotificationState,
 } from "../notifications/expo-reminders";
 
 export function TestReminder({
-  enabled,
+  remindersEnabled,
+  notificationStatus,
   busy,
 }: {
-  enabled: boolean;
+  remindersEnabled: boolean;
+  notificationStatus: NotificationStatus;
   busy: boolean;
 }) {
+  const canSend = remindersEnabled && notificationStatus.state === "ready";
   const [status, setStatus] = useState<TestNotificationState>("idle");
   const [pending, setPending] = useState(false);
-  const [notice, setNotice] = useState("");
+  const [actionNotice, setActionNotice] = useState("");
+  const [statusCheckFailed, setStatusCheckFailed] = useState(false);
+  const [listenerSetupFailed, setListenerSetupFailed] = useState(false);
+  const [retryAttempt, setRetryAttempt] = useState(0);
+  const [completedRetryAttempt, setCompletedRetryAttempt] = useState(0);
   useEffect(() => {
-    if (Platform.OS === "web") return;
     let active = true;
     let removeListener = () => {};
     const refresh = async () => {
       try {
         const state = await getTestNotificationState();
-        if (active) setStatus(state);
+        if (active) {
+          setStatus(state);
+          setStatusCheckFailed(false);
+        }
       } catch {
-        if (active) setNotice("Could not check the test reminder. Try again.");
+        if (active) setStatusCheckFailed(true);
       }
     };
-    void refresh();
-    void subscribeToTestNotification(() => {
+    // A reminder sync can cancel a scheduled test while leaving a delivered one.
+    const statusCheck = refresh();
+    const listenerSetup = subscribeToTestNotification(() => {
       if (active) {
-        setNotice("");
+        setActionNotice("");
         setStatus("delivered");
       }
     })
       .then((remove) => {
-        if (active) removeListener = remove;
-        else remove();
+        if (active) {
+          removeListener = remove;
+          setListenerSetupFailed(false);
+        } else {
+          remove();
+        }
       })
       .catch(() => {
-        if (active)
-          setNotice(
-            "Could not listen for the test reminder. Reopen Settings to retry.",
-          );
+        if (active) setListenerSetupFailed(true);
       });
+    void Promise.all([statusCheck, listenerSetup]).then(() => {
+      if (active) setCompletedRetryAttempt(retryAttempt);
+    });
     const foreground = AppState.addEventListener("change", (state) => {
       if (state === "active") void refresh();
     });
@@ -56,15 +71,15 @@ export function TestReminder({
       removeListener();
       foreground.remove();
     };
-  }, [enabled]);
+  }, [notificationStatus, retryAttempt]);
 
   async function act(cancel: boolean) {
     setPending(true);
-    setNotice("");
+    setActionNotice("");
     try {
       if (cancel) {
         await cancelTestNotification();
-        setNotice(
+        setActionNotice(
           status === "delivered"
             ? "Test notification cleared."
             : "Test reminder cancelled.",
@@ -75,7 +90,7 @@ export function TestReminder({
         setStatus("pending");
       }
     } catch (error) {
-      setNotice(
+      setActionNotice(
         error instanceof Error
           ? error.message
           : "The test reminder could not be updated.",
@@ -84,16 +99,32 @@ export function TestReminder({
       setPending(false);
     }
   }
-  if (Platform.OS === "web") return null;
+  const warning = statusCheckFailed
+    ? "Could not check the test reminder."
+    : listenerSetupFailed
+      ? "Could not listen for the test reminder."
+      : "";
+  const statusMessage =
+    actionNotice ||
+    (!warning &&
+      (status === "pending"
+        ? "Test reminder scheduled. Your phone may delay delivery."
+        : status === "delivered"
+          ? "Test reminder received."
+          : ""));
+  if (!canSend && !statusMessage && !warning) return null;
+
   return (
-    <View style={{ gap: 8 }}>
-      <Button
-        title="Send a test reminder"
-        variant="secondary"
-        disabled={!enabled || busy || status === "pending"}
-        loading={pending}
-        onPress={() => void act(false)}
-      />
+    <View style={{ gap: 8, alignItems: "flex-start" }}>
+      {canSend && (
+        <Button
+          title="Send test reminder"
+          variant="secondary"
+          disabled={busy || status === "pending"}
+          loading={pending}
+          onPress={() => void act(false)}
+        />
+      )}
       {status !== "idle" && (
         <Button
           title={
@@ -106,16 +137,25 @@ export function TestReminder({
           onPress={() => void act(true)}
         />
       )}
-      <Txt size={13} muted accessibilityLiveRegion="polite">
-        {notice ||
-          (status === "pending"
-            ? "Test reminder scheduled for about five seconds from now. Your phone may delay delivery."
-            : status === "delivered"
-              ? "Your test reminder was received."
-              : enabled
-                ? "Send a test to check notification delivery."
-                : "Enable reminders to send a test notification.")}
-      </Txt>
+      {statusMessage ? (
+        <Txt size={13} muted accessibilityLiveRegion="polite">
+          {statusMessage}
+        </Txt>
+      ) : null}
+      {warning ? (
+        <>
+          <Txt size={13} muted accessibilityLiveRegion="polite">
+            {warning}
+          </Txt>
+          <Button
+            title="Retry test reminder check"
+            variant="secondary"
+            disabled={busy || pending}
+            loading={retryAttempt !== completedRetryAttempt}
+            onPress={() => setRetryAttempt((attempt) => attempt + 1)}
+          />
+        </>
+      ) : null}
     </View>
   );
 }
